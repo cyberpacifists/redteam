@@ -1,0 +1,44 @@
+version: "3.7"
+
+services:
+
+  target1:
+    image: citizenstig/dvwa # dvwa
+    environment:
+      - MYSQL_PASS="insecure123"
+    healthcheck:
+      test: "curl -f localhost:80"
+      interval: 5s
+      retries: 3
+      start_period: "10"
+
+  target2:
+    image: hmlio/vaas-cve-2014-6271 # shellshock
+    healthcheck:
+      test: "curl -f localhost:80"
+      interval: 5s
+      retries: 3
+
+  script:
+    image: instrumentisto/nmap:7
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - "sleep 5 &&
+         echo -e '\n\n\nSCANNING...' &&
+         nmap -oG - -T4 target1 target2"
+    links:
+      - target1
+      - target2
+    depends_on:
+      - target1
+      - target2
+
+  metasploitfw:
+    image: metasploitframework/metasploit-framework
+    links:
+      - target1
+      - target2
+    depends_on:
+      - target1
+      - target2
