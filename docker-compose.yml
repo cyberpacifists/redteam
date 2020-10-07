@@ -34,7 +34,7 @@ services:
       - target1
       - target2
 
-  metasploitfw:
+  msf:
     image: metasploitframework/metasploit-framework
     links:
       - target1
