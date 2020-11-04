@@ -1,0 +1,16 @@
+version: "3.7"
+
+services:
+
+  db:
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: msf
+      POSTGRES_DB: msfdb
+      POSTGRES_PASSWORD: msfdbu123
+      PGDATA: /pgdata
+    ports:
+      - 5432:5432
+    # volumes: 
+      # - ./data/db:/pgdata
+

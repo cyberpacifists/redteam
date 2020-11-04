@@ -2,10 +2,57 @@ version: "3.7"
 
 services:
 
+  msfrpc:
+    image: metasploitframework/metasploit-framework
+    ports:
+      - 55553:55553
+    command:
+      - "./msfrpcd"
+      - "-a"
+      - "0.0.0.0"
+      - "-p"
+      - "55553"
+      - "-S"
+      - "-U"
+      - "director"
+      - "-P"
+      - "directorU123"
+      - "-f"
+    environment: 
+      DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
+    links:
+      - target1
+      - target2
+    depends_on:
+      - target1
+      - target2
+
+  msfconsole:
+    image: metasploitframework/metasploit-framework
+    stdin_open: true
+    tty: true
+    ports:
+      - 4444:4444
+    environment: 
+      DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
+      # MSF_UID: 1001
+      # MSF_GID: 1001
+    # volumes: 
+    #   - ./data/msf:/home/msf/.msf4
+    links:
+      - target1
+      - target2
+    depends_on:
+      - target1
+      - target2
+
   target1:
     image: citizenstig/dvwa # dvwa
     environment:
       - MYSQL_PASS="insecure123"
+    ports:
+      - 8081:80
+      - 8031:3306
     healthcheck:
       test: "curl -f localhost:80"
       interval: 5s
@@ -14,31 +61,21 @@ services:
 
   target2:
     image: hmlio/vaas-cve-2014-6271 # shellshock
+    ports:
+      - 8082:80
     healthcheck:
       test: "curl -f localhost:80"
       interval: 5s
       retries: 3
 
-  script:
-    image: instrumentisto/nmap:7
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - "sleep 5 &&
-         echo -e '\n\n\nSCANNING...' &&
-         nmap -oG - -T4 target1 target2"
+  director:
+    build: director
+    entrypoint:
+      - python
+      - main.py
+    environment:
+      MSF_HOST: localhost_sdaada
     links:
-      - target1
-      - target2
-    depends_on:
-      - target1
-      - target2
-
-  msf:
-    image: metasploitframework/metasploit-framework
-    links:
-      - target1
-      - target2
-    depends_on:
-      - target1
-      - target2
+      - msfrpc
+    depends_on: 
+      - msfrpc
