@@ -1,14 +1,14 @@
 import time
+import os
 
 from pymetasploit3.msfrpc import MsfRpcClient
-print('Director waiting...', flush=True)
-time.sleep(5)
-print('Director starting...')
+
+MSFRPC_HOSTS = os.environ['MSFRPC_HOSTS'].split(',')
 
 client = MsfRpcClient(
     'directorU123',
     username='director',
-    server='msfrpc',
+    server=MSFRPC_HOSTS[0],
     port=55553,
     ssl=False
 )

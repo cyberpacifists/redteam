@@ -67,15 +67,3 @@ services:
       test: "curl -f localhost:80"
       interval: 5s
       retries: 3
-
-  director:
-    build: director
-    entrypoint:
-      - python
-      - main.py
-    environment:
-      MSF_HOST: localhost_sdaada
-    links:
-      - msfrpc
-    depends_on: 
-      - msfrpc
