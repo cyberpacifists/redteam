@@ -2,11 +2,6 @@
 
 Red Team simulation
 
-## Requirements
-
-1. Install docker and docker-compose
-
-
 ## Components
 
 - Postgres database
@@ -16,6 +11,15 @@ Red Team simulation
 - Metasploit RPC api (red team worker)
 - Python director (red team director)
 - Metasploit console (for debugging)
+
+
+
+
+## Requirements
+
+1. Install docker and docker-compose
+
+
 
 
 ## Usage
