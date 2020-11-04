@@ -20,15 +20,11 @@ Red Team simulation
 
 ## Usage
 
-### First start the database
+1. Start the database: `docker-compose -f docker-compose-db.yml up -t 2`
+   (persistence is disabled, removing the container will reset the data)
+1. Start director and workers: `docker-compose -f docker-compose-workers.yml up -t 2`
+1. Start the director: `docker-compose up --build -t 2`
 
-1. Run `docker-compose -f docker-compose-db.yml up --build -t 2`
- 
-(persistence is disabled, removing the container will reset the data)
-
-### Start director and workers
-
-1. Run `docker-compose up --build -t 2`
 
 If you want to debug the state of the database or perform 
 manual actions in metasploit, you can connect to the
