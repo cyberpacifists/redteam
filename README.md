@@ -33,6 +33,9 @@ manual actions in metasploit, you can connect to the
 msfconsole by ```docker attach redteam_msfconsole_1```
 
 
+<details>
+  <summary>Click to expand!</summary>
+
 Example attack:
 
 
@@ -86,3 +89,4 @@ meterpreter >
 Profit!
 
 
+</details>
