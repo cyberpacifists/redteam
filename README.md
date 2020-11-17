@@ -38,7 +38,7 @@ msfconsole by ```docker attach redteam_msfconsole_1```
 
 
 <details>
-  <summary>Click to expand!</summary>
+  <summary>Remote code execution exploiting Shellshock</summary>
 
 ### Example attack
 
@@ -93,4 +93,14 @@ meterpreter >
 Profit!
 
 
+</details>
+
+
+<details>
+  <summary>Vulnerability scanning</summary>
+
+```
+  mkdir -p $HOME/.nmap/scripts && wget -O $HOME/.nmap/scripts/vulners.nse 'https://raw.githubusercontent.com/vulnersCom/nmap-vulners/master/vulners.nse' && nmap --script-updatedb
+  nmap -sV --script vulners  --script-args mincvss=6.0 target1
+```
 </details>

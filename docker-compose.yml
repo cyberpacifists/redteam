@@ -5,8 +5,13 @@ services:
   director:
     build: director
     network_mode: host
+    stdin_open: true
+    tty: true
     entrypoint:
       - python
+      - "-u"
       - main.py
     environment:
-      MSFRPC_HOSTS: localhost
+      MSFRPC_HOSTS: "localhost:55553"
+      LOGLEVEL: 'DEBUG'
+      SPEED: 80

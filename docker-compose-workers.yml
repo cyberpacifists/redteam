@@ -23,16 +23,18 @@ services:
     links:
       - target1
       - target2
+      - target3
     depends_on:
       - target1
       - target2
+      - target3
 
   msfconsole:
     image: metasploitframework/metasploit-framework
     stdin_open: true
     tty: true
-    ports:
-      - 4444:4444
+    # ports:
+    #   - 4444:4444
     environment: 
       DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
       # MSF_UID: 1001
@@ -42,17 +44,19 @@ services:
     links:
       - target1
       - target2
+      - target3
     depends_on:
       - target1
       - target2
+      - target3
 
   target1:
     image: citizenstig/dvwa # dvwa
     environment:
       - MYSQL_PASS="insecure123"
-    ports:
-      - 8081:80
-      - 8031:3306
+    # ports:
+    #   - 8081:80
+    #   - 8031:3306
     healthcheck:
       test: "curl -f localhost:80"
       interval: 5s
@@ -61,9 +65,12 @@ services:
 
   target2:
     image: hmlio/vaas-cve-2014-6271 # shellshock
-    ports:
-      - 8082:80
+    # ports:
+    #   - 8082:80
     healthcheck:
       test: "curl -f localhost:80"
       interval: 5s
       retries: 3
+
+  target3:
+    image: penkit/vsftpd:2.3.4 # vsftpd backdoor, do not trust this image

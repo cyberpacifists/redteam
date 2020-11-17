@@ -1,8 +1,9 @@
 FROM python:3.8-alpine
 
 WORKDIR /app
-ADD requirements.txt /app
-RUN pip install --no-cache -r /app/requirements.txt -t /app
-COPY src/ /app
+ADD Pipfile.lock Pipfile /app/
+RUN pip install pipenv \
+    && pipenv install --system --deploy --ignore-pipfile
+COPY director/ /app
 
-ENTRYPOINT [ "python", "main.py" ]
+ENTRYPOINT [ "python", "-u", "main.py" ]
