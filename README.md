@@ -38,8 +38,8 @@ Red Team simulation
 ```
 cd redteam/director
 pipenv shell
+pipenv install
 python -m pytest
-
 ```
 
 
