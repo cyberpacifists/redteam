@@ -9,13 +9,13 @@ from time import sleep
 from select import select
 import datetime
 
-import config
+from config import Config
 import workers
 import actions
 from errors import ActionExecutionError
 
 
-_appconfig = config.Config.from_environment(os.environ)
+_appconfig = Config.from_environment(os.environ)
 _log_director = _appconfig.log_director
 _log_decision = _appconfig.log_decision
 _msfrpc_hosts = os.environ['MSFRPC_HOSTS'].split(',')
