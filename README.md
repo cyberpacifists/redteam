@@ -33,6 +33,16 @@ Red Team simulation
 
 ## Development
 
+You should normally use docker, but if you need local development for some reason:
+
+```
+pip install --user pipenv
+cd redteam/director
+pipenv shell
+pipenv install
+python -u director/main.py
+```
+
 ### Tests
 
 ```
