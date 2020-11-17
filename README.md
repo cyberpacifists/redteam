@@ -31,6 +31,18 @@ Red Team simulation
 1. Start the director: `docker-compose up --build -t 2`
 
 
+## Development
+
+### Tests
+
+```
+cd redteam/director
+pipenv shell
+python -m pytest
+
+```
+
+
 ## Manual use of metasploit
 
 If you want to debug the state of the database or perform 
