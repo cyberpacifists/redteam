@@ -33,7 +33,7 @@ Red Team simulation
 
 ## Development
 
-You should normally use docker, but if you need local development for some reason:
+You should normally use `docker-compose up` instead of running your own python, but if for some reason you need local development:
 
 ```
 pip install --user pipenv
@@ -43,7 +43,7 @@ pipenv install
 python -u director/main.py
 ```
 
-### Tests
+To run tests:
 
 ```
 cd redteam/director
