@@ -8,6 +8,7 @@ Red Team simulation
 - Vulnerable hosts:
   - Apache httpd vulnerable to shellshock
   - DVWA (Damn Vulnerable Web Application)
+  - vsftpd with an infamous backdoor
 - Metasploit RPC api (red team worker)
 - Python director (red team director)
 - Metasploit console (for debugging)
