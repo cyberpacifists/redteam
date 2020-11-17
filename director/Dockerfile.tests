@@ -1,0 +1,11 @@
+FROM python:3.8-alpine
+
+WORKDIR /app
+ADD Pipfile.lock Pipfile /app/
+RUN pip install pipenv \
+    && pipenv install --dev --system --deploy --ignore-pipfile
+COPY director/ /app/director
+COPY tests/ /app/tests
+COPY setup.cfg .coveragerc /app/
+
+ENTRYPOINT [ "python", "-m", "pytest" ]

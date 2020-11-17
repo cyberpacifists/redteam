@@ -2,8 +2,10 @@ version: "3.7"
 
 services:
 
-  director:
-    build: director
+  director_tests:
+    build:
+      context: ./director
+      dockerfile: Dockerfile.tests
     network_mode: host
     stdin_open: true
     tty: true

@@ -4,6 +4,6 @@ WORKDIR /app
 ADD Pipfile.lock Pipfile /app/
 RUN pip install pipenv \
     && pipenv install --system --deploy --ignore-pipfile
-COPY director/ /app
+COPY director/ /app/director
 
-ENTRYPOINT [ "python", "-u", "main.py" ]
+ENTRYPOINT [ "python", "-u", "director/main.py" ]
