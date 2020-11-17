@@ -8,6 +8,7 @@ Red Team simulation
 - Vulnerable hosts:
   - Apache httpd vulnerable to shellshock
   - DVWA (Damn Vulnerable Web Application)
+  - vsftpd with an infamous backdoor
 - Metasploit RPC api (red team worker)
 - Python director (red team director)
 - Metasploit console (for debugging)
@@ -28,6 +29,28 @@ Red Team simulation
    (persistence is disabled, removing the container will reset the data)
 1. Start director and workers: `docker-compose -f docker-compose-workers.yml up -t 2`
 1. Start the director: `docker-compose up --build -t 2`
+
+
+## Development
+
+You should normally use `docker-compose up` instead of running your own python, but if for some reason you need local development:
+
+```
+pip install --user pipenv
+cd redteam/director
+pipenv shell
+pipenv install
+python -u director/main.py
+```
+
+To run tests:
+
+```
+cd redteam/director
+pipenv shell
+pipenv install
+python -m pytest
+```
 
 
 ## Manual use of metasploit
