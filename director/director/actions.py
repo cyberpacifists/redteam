@@ -34,8 +34,8 @@ class ExecuteExploitAction(Action):
         self.payload_name = payload_name
         self.options = options
 
-    def execute(self, client):
-        exploit = client.modules.use('exploit', self.exploit_name)
+    def execute(self, worker_client):
+        exploit = worker_client.modules.use('exploit', self.exploit_name)
         for key,value in self.options.items():
             exploit[key] = value
         # print(f'\noptions {exploit.options}')
@@ -46,16 +46,14 @@ class ExecuteExploitAction(Action):
         job = exploit.execute(payload=self.payload_name)
         if job.get('job_id'):
             print(f'Exploit suceeded, job={job}')
+            print("Sessions available: ")
+            for s in worker_client.sessions.list.keys():
+                print(s)
         else:
             raise ActionExecutionError('Failed to execute {} exploit (payload={}, options={}'.format(
                 self.exploit_name, self.payload_name, self.options))
             print(f'Exploit failed, job={job}')
         return job
-        # to-do: remove th
-        # Find all available sessions
-        print("Sessions available: ")
-        for s in client.sessions.list.keys():
-            print(s)
 
 
 class EnumerateNetworkAction(Action):

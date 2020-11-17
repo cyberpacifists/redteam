@@ -6,8 +6,6 @@ Red Team Director
 import sys
 import os
 from time import sleep
-from select import select
-import datetime
 
 from config import Config
 import workers
@@ -28,15 +26,15 @@ def main(args):
     Args:
       args ([str]): command line parameter list
     """
-    _log_director.debug("Starting {}...".format(__name__))
+    _log_director.debug("Starting Director...")
     bootstrap_workers()
     while(not _exit):
         loop()
-    _log_director.info("Script ends here")
+    _log_director.info("Director shutdown complete")
 
 
 def bootstrap_workers():
-    """Configure initial set of workers
+    """Configure initial set of workers from environment
     """
     for host in _msfrpc_hosts:
         worker = workers.MsfRpcWorker(
