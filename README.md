@@ -33,6 +33,12 @@ Red Team simulation
 
 ## Development
 
+### Run tests
+
+```docker-compose -f docker-compose-tests.yml up --build```
+
+### Using your local python
+
 You should normally use `docker-compose up` instead of running your own python, but if for some reason you need local development:
 
 ```
@@ -43,14 +49,6 @@ pipenv install
 python -u director/main.py
 ```
 
-To run tests:
-
-```
-cd redteam/director
-pipenv shell
-pipenv install
-python -m pytest
-```
 
 
 ## Manual use of metasploit
