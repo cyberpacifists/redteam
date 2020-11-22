@@ -15,8 +15,7 @@ to-do: more actions like below
 """
 
 
-from errors import ActionExecutionError
-
+from .errors import ActionExecutionError
 
 class Action():
     def __init__(self, kind):

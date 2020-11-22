@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+__init__
+"""
+
+import sys
 from pkg_resources import get_distribution, DistributionNotFound
+
 
 try:
     # Change here if project is renamed and does not equal the package name

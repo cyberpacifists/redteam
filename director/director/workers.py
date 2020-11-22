@@ -12,7 +12,7 @@ class Worker():
     """A worker
     """
     def __init__(self, appconfig, **kwargs):
-        self.id = uuid.uuid4()
+        self.id = uuid.uuid4() # pylint: disable=invalid-name
         self.appconfig = appconfig
 
     def client(self, refresh=False):
