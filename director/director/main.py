@@ -3,32 +3,33 @@
 Red Team Director
 """
 
-import sys
 import os
 from time import sleep
 
-from config import Config
-import workers
-import actions
-from errors import ActionExecutionError
+from .workers import MsfRpcWorker
+from .actions import ExecuteExploitAction
+from .errors import ActionExecutionError
 
 
-_appconfig = Config.from_environment(os.environ)
-_log_director = _appconfig.log_director
-_log_decision = _appconfig.log_decision
-_msfrpc_hosts = os.environ['MSFRPC_HOSTS'].split(',')
+# _appconfig = None
+# _msfrpc_hosts = None
+# _log_director = _appconf
 _workers = {}
 _exit = False
 
 
-def main(args):
+def main(appconfig, msfrpc_hosts):
     """Main entry point allowing external calls
     Args:
       args ([str]): command line parameter list
     """
+    global _appconfig, _msfrpc_hosts, _log_director
+    _appconfig = appconfig
+    _msfrpc_hosts = msfrpc_hosts
+    _log_director = _appconfig.log_director
     _log_director.debug("Starting Director...")
     bootstrap_workers()
-    while(not _exit):
+    while not _exit:
         loop()
     _log_director.info("Director shutdown complete")
 
@@ -37,7 +38,7 @@ def bootstrap_workers():
     """Configure initial set of workers from environment
     """
     for host in _msfrpc_hosts:
-        worker = workers.MsfRpcWorker(
+        worker = MsfRpcWorker(
             host=host.split(':')[0],
             port=int(host.split(':')[-1]) if ':' in host else 55553,
             username='director',
@@ -68,7 +69,7 @@ def plan_next_action(worker):
 def execute_action(worker, action):
     _log_director.info('Executing')
     try:
-        exploit_action = actions.ExecuteExploitAction(
+        exploit_action = ExecuteExploitAction(
             'unix/ftp/vsftpd_234_backdoor',
             'cmd/unix/interact',
             {
@@ -92,19 +93,8 @@ def execute_action(worker, action):
 
 def report(worker):
     _log_director.info('Report')
-    pass
 
 
 def turn_sleep(seconds):
-    _log_director.info(f'Waiting {seconds} seconds...')
+    _log_director.info('Waiting %s seconds...', seconds)
     sleep(seconds)
-
-
-def run():
-    """Entry point for console_scripts
-    """
-    main(sys.argv[1:])
-
-
-if __name__ == "__main__":
-    run()

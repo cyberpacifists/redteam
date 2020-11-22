@@ -6,4 +6,4 @@ RUN pip install pipenv \
     && pipenv install --system --deploy --ignore-pipfile
 COPY director/ /app/director
 
-ENTRYPOINT [ "python", "-u", "director/main.py" ]
+ENTRYPOINT [ "python", "-m", "director" ]
