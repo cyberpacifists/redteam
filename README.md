@@ -49,7 +49,7 @@ You should normally use `docker-compose up` instead of running your own python, 
 pip install --user pipenv
 cd redteam/director
 pipenv shell
-pipenv install
+pipenv install --dev
 python -u director/main.py
 ```
 
