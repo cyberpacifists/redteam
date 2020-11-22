@@ -33,6 +33,10 @@ Red Team simulation
 
 ## Development
 
+### Coding
+
+Use one branch per feature so we can merge in small change increments: `git checkout main && git pull && git checkout -b my-branch-name`
+
 ### Run tests
 
 ```docker-compose -f docker-compose-tests.yml up --build```
