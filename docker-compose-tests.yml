@@ -4,7 +4,7 @@ services:
 
   director_tests:
     build:
-      context: ./director
+      context: ./src
       dockerfile: Dockerfile.tests
     network_mode: host
     stdin_open: true
