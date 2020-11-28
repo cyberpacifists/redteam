@@ -27,7 +27,7 @@ Red Team simulation
 
 1. Start the database: `docker-compose -f docker-compose-db.yml up -t 2`
    (persistence is disabled, removing the container will reset the data)
-1. Start director and workers: `docker-compose -f docker-compose-workers.yml up -t 2`
+1. Start workers: `docker-compose -f docker-compose-workers.yml up -t 2`
 1. Start the director: `docker-compose up --build -t 2`
 
 
