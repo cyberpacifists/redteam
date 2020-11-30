@@ -6,6 +6,8 @@ Configuration module
 import sys
 import logging
 
+from .eventbus import dispatcher
+
 
 class Config():
 
@@ -19,6 +21,7 @@ class Config():
         cls.setup_logging(cls.loglevel)
         cls.log_director = logging.getLogger('director')
         cls.log_decision = logging.getLogger('decision')
+        cls.event_dispatcher = dispatcher
         cls.action_timeout = float(env.get('ACTION_TIMEOUT', '30'))
         cls.action_poll_timeout = float(env.get('ACTION_POLL_TIMEOUT', '0.010'))
         cls.targets = {

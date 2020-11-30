@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 pymetasploit3 = "*"
+PyDispatcher = "*"
 
 [dev-packages]
 pytest = "*"

@@ -56,6 +56,12 @@ def bootstrap_workers():
 def loop():
     """Event loop
     """
+    _appconfig.event_dispatcher.send(
+        signal='operations',
+        sender=__name__,
+        msg='Game started',
+        obj={}
+    )
     for id, worker in _workers.items():
         _log_director.debug('Processing worker {}'.format(id))
         action = plan_next_action(worker)

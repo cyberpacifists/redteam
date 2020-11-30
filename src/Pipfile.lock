@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5067a5bc76d051e3e6aacb98a24fd4f473ad0c149d5e2f70ed5c8a24b85597b2"
+            "sha256": "1bf6a4a4006057b59e3b2cd953b9613d416e37fd92a517e236ec775b0a3bd853"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -73,6 +73,14 @@
                 "sha256:9ca6883ce56b4e8da7e79ac18787889fa5206c79dcc67fb065376cd2fe03f342"
             ],
             "version": "==1.9.0"
+        },
+        "pydispatcher": {
+            "hashes": [
+                "sha256:5570069e1b1769af1fe481de6dd1d3a388492acddd2cdad7a3bde145615d5caf",
+                "sha256:5be4a8be12805ef7d712dd9a93284fb8bc53f309867e573f653a72e5fd10e433"
+            ],
+            "index": "pypi",
+            "version": "==2.0.5"
         },
         "pymetasploit3": {
             "hashes": [
