@@ -45,6 +45,7 @@ services:
       - target1
       - target2
       - target3
+      - wordpress
     depends_on:
       - target1
       - target2
@@ -74,3 +75,27 @@ services:
 
   target3:
     image: penkit/vsftpd:2.3.4 # vsftpd backdoor, do not trust this image
+
+  wordpress:
+    image: vulhub/wordpress:4.6
+    depends_on:
+     - wordpress-mysql
+    environment: 
+     - WORDPRESS_DB_HOST=wordpress-mysql:3306
+     - WORDPRESS_DB_USER=root
+     - WORDPRESS_DB_PASSWORD=root
+     - WORDPRESS_DB_NAME=wordpress
+    ports:
+     - "8080:80"
+    links:
+      - wordpress-mysql
+    # unix/webapp/wp_phpmailer_host_header
+    # set RHOSTS wordpress
+    # cat /var/www/html/wp-config.php
+    # fail: execute -f /bin/grep -a DB_PASSWORD /var/www/html/wp-config.php
+
+
+  wordpress-mysql:
+    image: mysql:5
+    environment: 
+     - MYSQL_ROOT_PASSWORD=root

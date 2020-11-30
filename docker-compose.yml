@@ -10,4 +10,4 @@ services:
     environment:
       MSFRPC_HOSTS: "localhost:55553"
       LOGLEVEL: 'DEBUG'
-      SPEED: 80
+      SPEED: 95

@@ -19,6 +19,14 @@ class Config():
         cls.setup_logging(cls.loglevel)
         cls.log_director = logging.getLogger('director')
         cls.log_decision = logging.getLogger('decision')
+        cls.action_timeout = float(env.get('ACTION_TIMEOUT', '30'))
+        cls.action_poll_timeout = float(env.get('ACTION_POLL_TIMEOUT', '0.010'))
+        cls.targets = {
+            'wordpress_db_password': {
+                'host': 'wordpress',
+                'flag_value': None,
+            }
+        }
         # to-do: mock an event bus instead of a campaign log
         # cls.log_campaign = logging.getLogger('campaign')
         return cls

