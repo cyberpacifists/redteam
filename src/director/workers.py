@@ -4,8 +4,18 @@ Workers module
 """
 
 import uuid
+import time
+import logging
+import json
 
 from pymetasploit3.msfrpc import MsfRpcClient
+from pymetasploit3.msfconsole import MsfRpcConsole
+
+from .errors import ActionExecutionError
+from .errors import ActionTimeoutError
+
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 class Worker():
@@ -30,6 +40,24 @@ class MsfRpcWorker(Worker):
         self.password = password
         self.ssl = ssl
         self._client = None
+        self._console = None
+        self.console_positive_out = list()
+        self.console_busy = False
+        self.action_timeout = appconfig.action_timeout
+        self.action_poll_timeout = appconfig.action_poll_timeout
+        self.verbose = True
+
+    def _read_console(self, console_data):
+        print(f'\nOutput received\nbusy = {console_data["busy"]}')
+        print(f'{console_data["prompt"]}')
+        self.console_busy = console_data['busy']
+        if '[+]' in console_data['data']:
+            sigdata = console_data['data'].rstrip().split('\n')
+            for line in sigdata:
+                if '[+]' in line:
+                    self.console_positive_out.append(line)
+        if self.verbose:
+            print(console_data['data'])
 
     def client(self, refresh=False):
         """Returns a client object for the worker
@@ -43,6 +71,38 @@ class MsfRpcWorker(Worker):
                 ssl=self.ssl
             )
         return self._client
+
+    def console(self):
+        """Returns a console object for the worker
+        """
+        if not self._console:
+            self._console = MsfRpcConsole(self.client(), cb=self._read_console)
+        return self._console
+
+    def execute(self, cmd, wait=True):
+        """Runs commands, optionally waiting for output
+        """
+        if self.verbose:
+            logging.debug(f'Executing: {cmd}')
+        self.console_busy = True
+        self.console().execute(cmd)
+        if wait:
+            self.wait_console()
+
+    def wait_console(self):
+        """Waits until console command has finished
+        """
+        timeout_stamp = time.time() + self.action_timeout
+        while time.time() < timeout_stamp:
+            if self.console_busy:
+                print('.', end='')
+                time.sleep(self.action_poll_timeout)
+            else:
+                print('-CommandCompleted')
+                return True
+        logging.warning(
+            'Timeout waiting for console output after %ss, aborting' % self.action_timeout)
+        raise ActionTimeoutError
 
 
 # def wait_tcp_port(host, port, timeout, connect_timeout=5, retry_interval=5, logger=None):
