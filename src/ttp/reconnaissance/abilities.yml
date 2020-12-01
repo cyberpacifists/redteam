@@ -1,9 +1,9 @@
-- id: !CONF ${ID|1234}
-  name: network_scan
-  description: !CONF ${DESCRIPTION}
-  tactic: !CONF ${TACTIC}
-  technique: !CONF ${TECHNIQUE}
+- id: !VAR ${UUID|1234}
+  name: NMAP network scanner
+  description: Scan external hosts for open ports and services
+  tactic: technical-information-gathering
+  technique: Conduct active scanning
   payloads:
-    - ./scanner.sh
+    - scanner.sh
   commands:
-    - !CONF ${COMMAND_NOOB}
+    - -T4 --verbose

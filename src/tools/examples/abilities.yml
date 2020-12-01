@@ -1,0 +1,21 @@
+# This file contains a list of abilities in a list.
+# the file will be parsed using PyYaml, and with a SafeLoader, therefore, it should follow a given structure
+#
+# Every ability has variables in it that can be changed and loaded from different configuration files in
+# order to achieve a generic automation of the creation process.
+- id: !CONF ${ID|1234}
+  # Every ability should have its own name, description and so on
+  name: !CONF ${NAME}
+  description: !CONF ${DESCRIPTION}
+  tactic: !CONF ${TACTIC}
+  technique: !CONF ${TECHNIQUE}
+  # the payloads attr is a list, just in case that one ability requires more than one file to operate, or a bunch
+  # of chained exploits.
+  payloads:
+    - !CONF ${PAYLOAD}
+  # commands is special, as it is an attribute which based on the index of the list, it will determine the level
+  # of expertise of the attacker, and therefore, the scope of commands at his disposition, or a chain of them.
+  # special cases are the last index of the attribute, which is meant to be used with a "custom" chain of commands
+  # that will be sent with the payload.
+  commands:
+    - !CONF ${COMMAND_NOOB}

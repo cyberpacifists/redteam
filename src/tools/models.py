@@ -2,6 +2,7 @@ import re
 import subprocess
 import yaml
 import random
+import uuid
 from .settings import *
 
 
@@ -28,7 +29,7 @@ class Permissions:
 
 
 # "->" are function annotations. Normally used to know what is supposed to be the returned object type
-def replace_variables(path: str, conf: object, tag: str = '!CONF') -> yaml.SafeLoader:
+def replace_variables(conf: object, data: object = None, path: str = None, tag: str = '!CONF') -> yaml.SafeLoader:
     # ${<VARIABLE>} | ${<VARIABLE><DEFAULT_SEPARATOR><default>}
     regex = '\${(\w+|\w+\\' + DEFAULT_SEPARATOR + '\w+)}.*?'
     pattern = re.compile(regex)
@@ -71,8 +72,9 @@ def replace_variables(path: str, conf: object, tag: str = '!CONF') -> yaml.SafeL
     loader.add_constructor(tag, constructor_var)
 
     if path:
-        with open(path) as yaml_data:
-            return yaml.load(yaml_data, Loader=loader)
+        data = open(path)
+
+    return yaml.load(data, Loader=loader)
 
 
 class Loader:
@@ -98,7 +100,8 @@ class Loader:
         path, conf, permissions = init_vector
 
         conf = yaml.safe_load(open(conf))
-        abilities = replace_variables(path, conf)
+        abilities = replace_variables(conf, path=path)
+        abilities = replace_variables({'UUID': uuid.uuid4()}, data=abilities, tag='!VAR')
 
         # iterate through the abilities and replace the commands with the maximum superset.
         # i.e. level=4 -> commands[:4]

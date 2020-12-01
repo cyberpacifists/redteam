@@ -17,10 +17,11 @@ DEFAULT_SEPARATOR = '|'
 
 DATABASES = {
     'default': {
-        'database': os.environ.get('DATABASE_DB', 'sql_db'),
+        'database': os.environ.get('DATABASE_NAME', 'db'),
+        'host': os.environ.get('DATABASE_HOST', 'localhost'),
         'user': os.environ.get('DATABASE_USER', 'username'),
         'password': os.environ.get('DATABASE_PSW', 'password'),
-        'adapter': os.environ.get('DATABASE', 'postgresql'),
+        'adapter': os.environ.get('DATABASE_ENGINE', 'postgresql'),
         'port': os.environ.get('DATABASE_PORT', '5432')
     }
 }
