@@ -9,10 +9,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
 
-    command: director:8000
-
     # other configuration
-    network_mode: host
+    #network_mode: host
     stdin_open: true
     tty: true
 
@@ -23,6 +21,8 @@ services:
     # add links between the containers
     depends_on:
       - postgres
+    links:
+      - postgres:5432
 
   postgres:
     image: postgres:latest
