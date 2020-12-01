@@ -15,6 +15,7 @@ services:
     # with them by calling them through their "container name"
     #network_mode: host
 
+
     stdin_open: true # docker run -i
     tty: true # docker run -t
 
