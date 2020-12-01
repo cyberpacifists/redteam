@@ -9,15 +9,12 @@ services:
       context: .
       dockerfile: docker/Dockerfile
 
+    command: director:8000
+
     # other configuration
-
-    # NOTE the network_mode host, does not allow this container to link to others and therefore communicate
-    # with them by calling them through their "container name"
-    #network_mode: host
-
-
-    stdin_open: true # docker run -i
-    tty: true # docker run -t
+    network_mode: host
+    stdin_open: true
+    tty: true
 
     # dependencies
     env_file:
@@ -26,9 +23,6 @@ services:
     # add links between the containers
     depends_on:
       - postgres
-
-    links:
-      - postgres:5432
 
   postgres:
     image: postgres:latest
