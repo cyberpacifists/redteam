@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 pymetasploit3 = "*"
 PyDispatcher = "*"
+PyYAML="5.3.1"
 
 [dev-packages]
 pytest = "*"

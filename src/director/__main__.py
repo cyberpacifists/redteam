@@ -4,14 +4,14 @@ Director module entrypoint
 """
 
 import os
-import sys
-
 from .main import main
 from .config import Config
 
-print(f'__main__.py Python path = {sys.path}')
+# @mention Dani, is this used in any way?
+# import sys
+# print(f'__main__.py Python path = {sys.path}')
 
 appconfig = Config.from_environment(os.environ)
-msfrpc_hosts = os.environ['MSFRPC_HOSTS'].split(',')
+msfrpc_hosts = os.environ.get('MSFRPC_HOSTS').split(',')
 
 main(appconfig, msfrpc_hosts)

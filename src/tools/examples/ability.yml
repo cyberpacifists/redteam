@@ -1,0 +1,9 @@
+- id: !CONF ${UUID|1234}
+  name: network_scan
+  description: !CONF ${DESCRIPTION}
+  tactic: !CONF ${TACTIC}
+  technique: !CONF ${TECHNIQUE}
+  payloads:
+    - ./scanner.sh
+  commands:
+    - !CONF ${COMMAND_NOOB}

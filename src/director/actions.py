@@ -19,11 +19,14 @@ import time
 
 from .errors import ActionExecutionError
 
+
 class Action():
     def __init__(self, kind):
         self.kind = kind
+
     def execute(self, worker):
         pass
+
     def execute_rpc(self, worker_client):
         pass
 
@@ -31,6 +34,7 @@ class Action():
 class ExecuteExploitAction(Action):
     """Executes an arbitrary exploit
     """
+
     def __init__(self, exploit_name, payload_name, options):
         super().__init__(kind='msfrpc')
         self.exploit_name = exploit_name
@@ -43,7 +47,7 @@ class ExecuteExploitAction(Action):
         commands = [
             f'use exploits/{self.exploit_name}'
         ]
-        for key,value in self.options.items():
+        for key, value in self.options.items():
             commands.append(f'set {key} {value}')
         commands.append('options')
         # commands.append('show payloads')
@@ -64,7 +68,7 @@ class ExecuteExploitAction(Action):
 
     def execute_rpc(self, worker_client):
         exploit = worker_client.modules.use('exploit', self.exploit_name)
-        for key,value in self.options.items():
+        for key, value in self.options.items():
             exploit[key] = value
         # print(f'\noptions {exploit.options}')
         print(f'\nrequired options {exploit.required}')
@@ -93,6 +97,7 @@ class ExecuteExploitAction(Action):
 class EnumerateNetworkAction(Action):
     """
     """
+
     def __init__(self, target_cidr):
         raise NotImplementedError('This is not yet implemented')
         super().__init__(kind='msfrpc')
@@ -109,6 +114,7 @@ class EnumerateNetworkAction(Action):
 class ExecuteSessionCommandAction(Action):
     """Executes an arbitrary command in a session
     """
+
     def __init__(self, cmd):
         super().__init__(kind='msfrpc')
         self.cmd = cmd

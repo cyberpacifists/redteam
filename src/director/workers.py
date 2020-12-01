@@ -18,11 +18,11 @@ from .errors import ActionTimeoutError
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
-class Worker():
+class Worker:
     """A worker
     """
     def __init__(self, appconfig, **kwargs):
-        self.id = uuid.uuid4() # pylint: disable=invalid-name
+        self.id = uuid.uuid4()  # pylint: disable=invalid-name
         self.appconfig = appconfig
 
     def client(self, refresh=False):

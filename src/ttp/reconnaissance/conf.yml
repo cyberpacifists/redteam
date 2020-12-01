@@ -1,0 +1,4 @@
+DESCRIPTION: Scan external hosts for open ports and services
+TACTIC: technical-information-gathering
+TECHNIQUE: Conduct active scanning
+COMMAND_NOOB: 0.0.0.0 -T4 --verbose
