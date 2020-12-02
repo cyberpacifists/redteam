@@ -20,6 +20,10 @@ services:
       - "-f"
     environment: 
       DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
+      MSF_UID: 1201
+      MSF_GID: 1201
+    volumes:
+      - ./data/msf:/home/msf/.msf4
     links:
       - target1
       - target2
@@ -37,10 +41,10 @@ services:
     #   - 4444:4444
     environment: 
       DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
-      # MSF_UID: 1001
-      # MSF_GID: 1001
-    # volumes: 
-    #   - ./data/msf:/home/msf/.msf4
+      MSF_UID: 1202
+      MSF_GID: 1202
+    volumes:
+      - ./data/msfconsole:/home/msf/.msf4
     links:
       - target1
       - target2
