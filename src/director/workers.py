@@ -185,6 +185,6 @@ class MsfRpcWorker(Worker):
         """Find a session with all the given properties"""
         # XXX filter sessions
         if self.client().sessions.list:
-            print(self.client().sessions.list)
+            # print(self.client().sessions.list)
             return next(iter(self.client().sessions.list.values()))
         return None
