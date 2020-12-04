@@ -56,6 +56,11 @@ class Tactic(ABC): # pylint: disable=too-few-public-methods
         pass
 
 
+class DiscoveryTactic(Tactic):
+    tactic_id = 'TA0007'
+    tactic_name = 'Discovery'
+
+
 class LateralMovementTactic(Tactic):
     tactic_id = 'TA0008'
     tactic_name = 'Lateral Movement'
@@ -90,6 +95,60 @@ class Technique(ABC):
         pass
 
 
+class RemoteSystemDiscoveryTechnique(
+    Technique,
+    DiscoveryTactic
+):
+    technique_id = 'T1018'
+    name = 'Remote System Discovery'
+
+
+# class PingNetworkServiceScanningTechnique(
+#     MetasploitExecutor,
+#     RemoteSystemDiscoveryTechnique
+# ):
+#     technique_id = 'T1018.401'
+#     name = 'Ping Remote System Discovery',
+#     skill_score = 5
+#     stealth_score = 60
+#     module_name = 'post/multi/gather/ping_sweep'
+#     def __init__(self):
+#         super().__init__(self.module_name)
+
+
+class NetworkServiceScanningTechnique(
+    Technique,
+    DiscoveryTactic
+):
+    technique_id = 'T1046'
+    name = 'Network Service Scanning',
+
+
+class SynNetworkServiceScanningTechnique(
+    MetasploitExecutor,
+    NetworkServiceScanningTechnique
+):
+    technique_id = 'T1046.401'
+    name = 'SYN Network Service Scanning',
+    skill_score = 10
+    stealth_score = 60
+    module_name = 'auxiliary/scanner/portscan/syn'
+    def __init__(self):
+        super().__init__(self.module_name)
+
+class NetworkServiceScanningTechnique(
+    MetasploitExecutor,
+    Technique,
+    DiscoveryTactic
+):
+    technique_id = 'T1046'
+    name = 'Network Service Scanning',
+    skill_score = 5
+    stealth_score = 60
+    module_name = 'exploits/unix/webapp/wp_phpmailer_host_header'
+    def __init__(self):
+        super().__init__(self.module_name)
+
 
 class ExploitationOfRemoteServicesTechnique(
     MetasploitExecutor,
@@ -121,10 +180,6 @@ class DumpWordpressConfigTechnique(
     module_name = 'post/linux/gather/enum_wordpress'
     def __init__(self):
         super().__init__(self.module_name)
-    # def describe_flag(self):
-    #     return {
-    #         type: 'session',
-    #     }
 
 
 # class ExecuteSessionCommandTechnique(Technique):

@@ -130,6 +130,42 @@ class MsfRpcWorker(Worker):
                     raise ValueError(f'Unknown kind "assert_{kind}" in Goal')
         return True
 
+    def _find_services(self, properties, interpolations):
+        """Find services with all the given properties"""
+        services = self.client().call('db.services', opts=[{}])
+        print(f'All services={services}')
+        matching_services = []
+        for service in services['services']:
+            match = True
+            for prop, value in properties.items():
+                if value in interpolations:
+                    value = interpolations[value]
+                    value = service.get(prop)
+                if not service.get(prop) or (service.get(prop) != value and value != '@NOTNULL@'):
+                    match = False
+                    break
+            if match:
+                matching_services.append(service)
+        return matching_services
+
+    def _find_hosts(self, properties, interpolations):
+        """Find hosts with all the given properties"""
+        hosts = self.client().call('db.hosts', opts=[{}])
+        print(f'All hosts={hosts}')
+        matching_hosts = []
+        for host in hosts['hosts']:
+            match = True
+            for prop, value in properties.items():
+                if value in interpolations:
+                    value = interpolations[value]
+                    value = host.get(prop)
+                if not host.get(prop) or (host.get(prop) != value and value != '@NOTNULL@'):
+                    match = False
+                    break
+            if match:
+                matching_hosts.append(host)
+        return matching_hosts
+
     def _find_loots(self, properties, interpolations):
         """Find credentials with all the given properties"""
         loots = self.client().call('db.loots', opts=[{}])

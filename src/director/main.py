@@ -15,6 +15,7 @@ from .errors import ActionExecutionError
 from .errors import ActionTimeoutError
 from .tactics import DumpWordpressConfigTechnique
 from .tactics import ExploitationOfRemoteServicesTechnique
+from .tactics import SynNetworkServiceScanningTechnique
 
 
 # _appconfig = None
@@ -23,6 +24,45 @@ from .tactics import ExploitationOfRemoteServicesTechnique
 _workers = {}
 _exit = False
 
+# enumerate_network = Action(
+#     phase=1,
+#     name='Enumerate network',
+#     technique=PingNetworkServiceScanningTechnique(),
+#     targets=['172.19.0.7/29'],
+#     goals={
+#         'goals': [
+#             {
+#                 'name': 'any-host-discovered',
+#                 'assert_host': {
+#                     'host': '@NOTNULL@',
+#                 }
+#             }
+#         ]
+#     }
+# )
+discover_webapps = Action(
+    phase=1,
+    name='Discover web apps',
+    technique=SynNetworkServiceScanningTechnique(),
+    targets=['172.19.0.7/29'],
+    timeout=300,
+    goals={
+        'goals': [
+            {
+                'name': 'services-http',
+                'assert_service': {
+                    'name': 'http',
+                }
+            },
+            {
+                'name': 'services-https',
+                'assert_service': {
+                    'name': 'https',
+                }
+            },
+        ]
+    }
+)
 wordpress_exploit = Action(
     phase=4,
     name='Exploit Wordpress vulnerability',
@@ -120,12 +160,16 @@ def plan_next_action(worker):
         _log_director(f'The flag has been captured')
         _log_director(json.dumps(flag))
         sys.exit(0)
+    # XXX we need a tree here OoO
     if wordpress_dump_config.verify_goals(worker):
-        print('YOU WIN')
+        print('\n\n******************\n\nFLAG CAPTURED\n\n*******************\n')
         sys.exit(0)
     elif wordpress_exploit.verify_goals(worker):
         return wordpress_dump_config
-    return wordpress_exploit
+    elif discover_webapps.verify_goals(worker):
+        return wordpress_exploit
+    else:
+        return discover_webapps
     
 
 
