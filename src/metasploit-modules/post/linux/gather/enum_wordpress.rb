@@ -10,9 +10,9 @@ class MetasploitModule < Msf::Post
     super( update_info( info,
       'Name'          => 'Wordpress Gather Configurations',
       'Description'   => %q{
-        This module collects configuration files for Wordpress
-        If a config file is found in its default path, the module will assume
-        that is the file we want.
+        This module collects configuration files for Wordpress.
+        If a config file is found it is parsed and credentials
+        exfiltrated.
       },
       'License'       => MSF_LICENSE,
       'Author'        =>
