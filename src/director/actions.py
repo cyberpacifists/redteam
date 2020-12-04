@@ -14,6 +14,7 @@ import time
 
 from .errors import ActionExecutionError
 
+
 class Action():
     def __init__(
         self,

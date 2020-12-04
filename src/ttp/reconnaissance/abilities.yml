@@ -1,0 +1,9 @@
+- id: !VAR ${UUID|1234}
+  name: NMAP network scanner
+  description: Scan external hosts for open ports and services
+  tactic: technical-information-gathering
+  technique: Conduct active scanning
+  payloads:
+    - scanner.sh
+  commands:
+    - -T4 --verbose
