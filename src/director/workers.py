@@ -45,11 +45,9 @@ class MsfRpcWorker(Worker):
         self.console_busy = False
         self.action_timeout = appconfig.action_timeout
         self.action_poll_timeout = appconfig.action_poll_timeout
-        self.verbose = True
+        self.verbose = False
 
     def _read_console(self, console_data):
-        print(f'\nOutput received (busy = {console_data["busy"]})')
-        print(f'{console_data["prompt"]}')
         self.console_busy = console_data['busy']
         if '[+]' in console_data['data']:
             sigdata = console_data['data'].rstrip().split('\n')
@@ -57,6 +55,7 @@ class MsfRpcWorker(Worker):
                 if '[+]' in line:
                     self.console_positive_out.append(line)
         if self.verbose:
+            print(f'\nOutput received (busy = {console_data["busy"]}) prompt={console_data["prompt"]}')
             print(f'{console_data["data"]}\n-EOF\n\n\n')
 
     def client(self, refresh=False):
@@ -97,10 +96,9 @@ class MsfRpcWorker(Worker):
         timeout_stamp = time.time() + timeout
         while time.time() < timeout_stamp:
             if self.console_busy:
-                print('.', end='', flush=True)
+                # print('.', end='', flush=True)
                 time.sleep(self.action_poll_timeout)
             else:
-                print('-CommandCompleted')
                 return True
         logging.warning(
             'Timeout waiting for console output after %ss, aborting' % self.action_timeout)
