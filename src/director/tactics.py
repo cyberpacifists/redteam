@@ -40,8 +40,6 @@ class MetasploitExecutor():
                 commands.append(f'set {key} {value}')
         commands.append('run -z')
         worker.execute('\n'.join(commands), wait=True, timeout=timeout)
-        worker.execute('sessions\n', wait=True)
-        worker.execute('loot\n', wait=True)
 
 
 class Tactic(ABC): # pylint: disable=too-few-public-methods
