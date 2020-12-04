@@ -45,19 +45,19 @@ discover_webapps = Action(
     name='Discover web apps',
     technique=SynNetworkServiceScanningTechnique(),
     targets=['172.19.0.7/29'],
-    timeout=300,
+    timeout=600,
     goals={
         'goals': [
             {
                 'name': 'services-http',
                 'assert_service': {
-                    'name': 'http',
+                    'port': 80,
                 }
             },
             {
                 'name': 'services-https',
                 'assert_service': {
-                    'name': 'https',
+                    'port': 443,
                 }
             },
         ]
@@ -68,6 +68,7 @@ wordpress_exploit = Action(
     name='Exploit Wordpress vulnerability',
     technique=ExploitationOfRemoteServicesTechnique(),
     targets=['172.19.0.7'],
+    timeout=90,
     goals={
         'goals': [
             {
@@ -83,6 +84,7 @@ wordpress_dump_config = Action(
     phase=6,
     name='Dump Wordpress credentials',
     technique=DumpWordpressConfigTechnique(),
+    timeout=180,
     targets_query={
         'session': {
             'host': '172.19.0.7',
@@ -114,6 +116,12 @@ def main(appconfig, msfrpc_hosts):
     _log_director = _appconfig.log_director
     _log_director.debug("Starting Director...")
     bootstrap_workers()
+    _appconfig.event_dispatcher.send(
+        signal='operations',
+        sender=__name__,
+        msg='Game started',
+        obj={}
+    )
     while not _exit:
         loop()
     _log_director.info("Director shutdown complete")
@@ -124,6 +132,7 @@ def bootstrap_workers():
     """
     for host in _msfrpc_hosts:
         worker = MsfRpcWorker(
+            # XXX load config from environment
             host=host.split(':')[0],
             port=int(host.split(':')[-1]) if ':' in host else 55553,
             username='director',
@@ -139,12 +148,6 @@ def bootstrap_workers():
 def loop():
     """Event loop
     """
-    _appconfig.event_dispatcher.send(
-        signal='operations',
-        sender=__name__,
-        msg='Game started',
-        obj={}
-    )
     for id, worker in _workers.items():
         _log_director.debug('Processing worker {}'.format(id))
         # print(worker.client().call('db.loots', opts=[{}]))
@@ -155,14 +158,15 @@ def loop():
 
 
 def plan_next_action(worker):
-    flag = _appconfig.targets['wordpress_db_password']
-    if flag['flag_value']:
-        _log_director(f'The flag has been captured')
-        _log_director(json.dumps(flag))
-        sys.exit(0)
-    # XXX we need a tree here OoO
+    # flag = _appconfig.targets['wordpress_db_password']
+    # if flag['flag_value']:
+    #     _log_director(f'The flag has been captured')
+    #     _log_director(json.dumps(flag))
+    #     sys.exit(0)
+
+    # XXX we need a tree here instead of this hardcoded path
     if wordpress_dump_config.verify_goals(worker):
-        print('\n\n******************\n\nFLAG CAPTURED\n\n*******************\n')
+        print('\n\n******************\n\nFLAG CAPTURED\n\n******************\n')
         sys.exit(0)
     elif wordpress_exploit.verify_goals(worker):
         return wordpress_dump_config
@@ -174,10 +178,11 @@ def plan_next_action(worker):
 
 
 def execute_action(worker, action):
-    _log_director.info(f'\n\n\nExecuting action {action}...')
+    _log_director.info(f'\n\n\n\n\n\n==============================================================================')
+    _log_director.info(f'Executing action {action}...')
     try:
         action.execute(worker)
-        _log_director.info(f'Action outcome for {action}: {action.verify_goals(worker)}\n\n\n')
+        _log_director.info(f'Action outcome for {action}: {action.verify_goals(worker)}')
     except ActionExecutionError:
         _log_director.warning('Failed to execute exploit action')
     except ActionTimeoutError:
@@ -185,7 +190,8 @@ def execute_action(worker, action):
 
 
 def report(worker):
-    _log_director.info('Report')
+    # _log_director.info('Report')
+    pass
 
 
 def turn_sleep(seconds):
