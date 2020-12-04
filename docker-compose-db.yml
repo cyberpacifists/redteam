@@ -4,11 +4,8 @@ services:
 
   db:
     image: postgres:12-alpine
-    environment:
-      POSTGRES_USER: msf
-      POSTGRES_DB: msfdb
-      POSTGRES_PASSWORD: msfdbu123
-      PGDATA: /pgdata
+    env_file:
+      - env/.env.example.db
     ports:
       - 5432:5432
     volumes:
