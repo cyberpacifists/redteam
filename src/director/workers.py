@@ -3,7 +3,7 @@
 Workers module
 """
 
-import uuid
+import shortuuid
 import time
 import logging
 import json
@@ -22,7 +22,7 @@ class Worker:
     """A worker
     """
     def __init__(self, appconfig, **kwargs):
-        self.id = uuid.uuid4()  # pylint: disable=invalid-name
+        self.uid = f'w-{shortuuid.uuid()[:4]}'
         self.appconfig = appconfig
 
     def client(self, refresh=False):
@@ -48,7 +48,7 @@ class MsfRpcWorker(Worker):
         self.verbose = True
 
     def _read_console(self, console_data):
-        print(f'\nOutput received\nbusy = {console_data["busy"]}')
+        print(f'\nOutput received (busy = {console_data["busy"]})')
         print(f'{console_data["prompt"]}')
         self.console_busy = console_data['busy']
         if '[+]' in console_data['data']:
@@ -57,7 +57,7 @@ class MsfRpcWorker(Worker):
                 if '[+]' in line:
                     self.console_positive_out.append(line)
         if self.verbose:
-            print(console_data['data'])
+            print(f'{console_data["data"]}\n-EOF\n\n\n')
 
     def client(self, refresh=False):
         """Returns a client object for the worker
@@ -79,7 +79,7 @@ class MsfRpcWorker(Worker):
             self._console = MsfRpcConsole(self.client(), cb=self._read_console)
         return self._console
 
-    def execute(self, cmd, wait=True):
+    def execute(self, cmd, wait=True, timeout=None):
         """Runs commands, optionally waiting for output
         """
         if self.verbose:
@@ -87,15 +87,17 @@ class MsfRpcWorker(Worker):
         self.console_busy = True
         self.console().execute(cmd)
         if wait:
-            self.wait_console()
+            self.wait_console(timeout)
 
-    def wait_console(self):
+    def wait_console(self, timeout):
         """Waits until console command has finished
         """
-        timeout_stamp = time.time() + self.action_timeout
+        if not timeout:
+            timeout = self.action_timeout
+        timeout_stamp = time.time() + timeout
         while time.time() < timeout_stamp:
             if self.console_busy:
-                print('.', end='')
+                print('.', end='', flush=True)
                 time.sleep(self.action_poll_timeout)
             else:
                 print('-CommandCompleted')
@@ -104,34 +106,52 @@ class MsfRpcWorker(Worker):
             'Timeout waiting for console output after %ss, aborting' % self.action_timeout)
         raise ActionTimeoutError
 
+    def verify_goals(self, goals, target):
+        """Goals is a list of dicts
+        Any achieved item from the list causes achievement of overall Goals.
+        All assert_* keys in a given dict must be achieved to achieve that goal.
+        """
+        for goal in goals['goals']:
+            if self._verify_goal(goal, target):
+                return True
+        return False
 
-# def wait_tcp_port(host, port, timeout, connect_timeout=5, retry_interval=5, logger=None):
-#     """
-#     """
-#     if not logger:
-#         logger = logging.getLogger(__name__)
-#         logger.setLevel(LOGLEVEL_DEFAULT)
-#     logger.info('Waiting for TCP port to be available ({}:{}) (max wait {}s, interval {}s)'.format(host, port, timeout, retry_interval))
-#     timeout_stamp = time.time() + timeout
-#     attempts = 0
-#     while time.time() < timeout_stamp:
-#         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-#             sock.settimeout(  int(connect_timeout)  )
-#             try:
-#                 attempts += 1
-#                 logger.debug('Trying connection to {}:{} (attempt {})'.format(host, port, attempts))
-#                 sock.connect((host, port))
-#                 logger.info('TCP port {}:{} available after {} attempts'.format(host, port, attempts))
-#                 return True
-#             except Exception as e1:
-#                 logger.debug('Could not connect to {}:{} {}'.format(host, port, e1))
-#                 time.sleep(  int(retry_interval)  )
-#     logger.warning('Failed to reach TCP port {}:{} after {} attempts in {} seconds'.format(host, port, attempts, timeout))
-#     return False
+    def _verify_goal(self, goal, target):
+        interpolations = {
+            '@TARGET@': target
+        }
+        print(f'Goal={goal}')
+        for goal_key, goal_spec in goal.items():
+            if goal_key.startswith('assert_'):
+                kind = goal_key.split('assert_')[-1]
+                try:
+                    func_name = getattr(self, f'_find_{kind}s')
+                    if not func_name(goal_spec, interpolations):
+                        return False
+                except AttributeError:
+                    raise ValueError(f'Unknown kind "assert_{kind}" in Goal')
+        return True
 
-# if not wait_tcp_port(worker['host'], worker['port'], 5):
-#     print('TCP service is not available')
-#     logging.critical('TCP service is not available')
-#     raise RuntimeError()
-# logging.info('Port is reachable')
-# print('RPC Port is reachable')
+    def _find_loots(self, properties, interpolations):
+        """Find credentials with all the given properties"""
+        loots = self.client().call('db.loots', opts=[{}])
+        matching_loots = []
+        for loot in loots['loots']:
+            match = True
+            for prop, value in properties.items():
+                if value in interpolations:
+                    value = interpolations[value]
+                if not loot.get(prop) or loot.get(prop) != value:
+                    match = False
+                    break
+            if match:
+                matching_loots.append(loot)
+        return matching_loots
+
+    def _find_sessions(self, properties, interpolations):
+        """Find a session with all the given properties"""
+        # XXX filter sessions
+        if self.client().sessions.list:
+            print(self.client().sessions.list)
+            return next(iter(self.client().sessions.list.values()))
+        return None

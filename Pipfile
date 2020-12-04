@@ -7,6 +7,8 @@ name = "pypi"
 pymetasploit3 = "*"
 PyDispatcher = "*"
 PyYAML="5.3.1"
+anytree = "*"
+shortuuid = "*"
 
 [dev-packages]
 pytest = "*"
