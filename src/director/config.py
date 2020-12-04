@@ -22,7 +22,7 @@ class Config():
         cls.log_director = logging.getLogger('director')
         cls.log_decision = logging.getLogger('decision')
         cls.event_dispatcher = dispatcher
-        cls.action_timeout = float(env.get('ACTION_TIMEOUT', '30'))
+        cls.action_timeout = float(env.get('ACTION_TIMEOUT', '120'))
         cls.action_poll_timeout = float(env.get('ACTION_POLL_TIMEOUT', '0.010'))
         cls.targets = {
             'wordpress_db_password': {
