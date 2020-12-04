@@ -1,34 +1,13 @@
-version: "3.8"
+version: "3.7"
 
 services:
 
   director:
-    # building block
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-
-    # other configuration
-    #network_mode: host
-    stdin_open: true # docker -i
-    tty: true # docker -t
-
-    # dependencies
-    env_file:
-      - env/.env
-
-    # add links between the containers
-    depends_on:
-      - postgres
-    links:
-      - postgres:5432
-
-  postgres:
-    image: postgres:latest
-    env_file:
-      - env/.env.db
-    volumes:
-      - postgres_data:/var/lib/postgres/data/
-
-volumes:
-  postgres_data:
+    build: src
+    network_mode: host
+    stdin_open: true
+    tty: true
+    environment:
+      MSFRPC_HOSTS: "localhost:55553"
+      LOGLEVEL: 'DEBUG'
+      SPEED: 95
