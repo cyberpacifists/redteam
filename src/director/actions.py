@@ -38,7 +38,7 @@ class Action():
         self.timeout = timeout
         self.attempts = 0
         self.succeeded = False
-        self._session_id = '1' # XXX remove
+        self._session_id = None # XXX remove
         if not targets and not targets_query:
             raise ValueError(
                 'An Action requires either a list of targets or a target query expression'
@@ -74,8 +74,9 @@ class Action():
         )
         parameters = {
             'RHOSTS': ','.join(execution_targets),
-            'SESSION': self._session_id,
         }
+        if self._session_id:
+            parameters['SESSION'] = self._session_id
         if self.timeout:
             parameters['_timeout'] = self.timeout
         self.technique.execute(worker, parameters)
