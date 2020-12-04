@@ -45,7 +45,7 @@ discover_webapps = Action(
     name='Discover web apps',
     technique=SynNetworkServiceScanningTechnique(),
     targets=['172.19.0.7/29'],
-    timeout=600,
+    timeout=600, # ioctl errors are shown, but do not worry, it works (but it's slow)
     goals={
         'goals': [
             {
