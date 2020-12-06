@@ -7,10 +7,10 @@ Actions glue together a Technique, a Worker and a Target.
 """
 
 import random
-import shortuuid
 import socket
 import logging
 import time
+import uuid
 
 from .errors import ActionExecutionError
 
@@ -27,7 +27,7 @@ class Action():
         max_targets=10,
         timeout=None
     ):
-        self.uid = f'a-{shortuuid.uuid()[:4]}'
+        self.uid = f'a-{str(uuid.uuid4())[-4:]}'
         self.phase = phase
         self.name = name
         self.technique = technique

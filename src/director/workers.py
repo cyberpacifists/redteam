@@ -3,7 +3,7 @@
 Workers module
 """
 
-import shortuuid
+import uuid
 import time
 import logging
 import json
@@ -22,7 +22,7 @@ class Worker:
     """A worker
     """
     def __init__(self, appconfig, **kwargs):
-        self.uid = f'w-{shortuuid.uuid()[:4]}'
+        self.uid = f'w-{str(uuid.uuid4())[-4:]}'
         self.appconfig = appconfig
 
     def client(self, refresh=False):

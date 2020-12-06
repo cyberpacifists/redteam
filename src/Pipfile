@@ -8,7 +8,6 @@ pymetasploit3 = "*"
 PyDispatcher = "*"
 PyYAML = "*"
 anytree = "*"
-shortuuid = "*"
 
 [dev-packages]
 pytest = "*"
