@@ -10,33 +10,21 @@ a government employee.
 These classes will define how they interact with the systems, how destructive they are, how intrusive, which tools
 they will use, and so on.
 """
-
-from src.tools.settings import *
-import yaml
+from src.tools.models import Schema
+from src.campaigns.models import Campaign
 
 
 class Adversary:
     """
     This class is the top level adversary, the decisions maker, the way the app behaves
     """
+    __campaign: Campaign = None
 
-    def __init__(self, profile, schema, objective, abilities, networks=None):
+    def __init__(self, profile, networks=None):
         self.profile = profile
-        self.objective = objective
-        self.abilities = abilities
-        self.schema = schema
 
-        # initialization vector for the networks available to this adversary
+        # initialization vector for the networks available to this adversary.
         self.networks = networks
-
-    def build_adversary(self):
-        """
-        This function will create a logical decision tree based on the characteristics already given to him.
-
-        To create this decision tree, we help ourselves with the kill-chain, to stipulate the mental process that
-        the attacker must follow, and the TTPs categories
-        """
-        pass
 
     @property
     def networks(self):
@@ -47,48 +35,76 @@ class Adversary:
         # initialize the networks to the given addresses.
         networks = []
 
-        for network in network_addresses:
-            n_ = Network(network)
-            networks.append(n_)
+        if network_addresses:
+            for network in network_addresses:
+                n_ = Network(network)
+                networks.append(n_)
 
         self.networks_ = networks
 
-
-class Schema:
-    """
-    Generate a list of procedures and tree pathing steps
-    """
-
-    def __init__(self, tactics: list):
-        # get the list of abilities from a list of tactics given list of string tactics
-        self.abilities = tactics
-
     @property
-    def abilities(self):
-        return self.abilities_
+    def profile(self):
+        return self._profile
 
-    @abilities.setter
-    def abilities(self, tactics):
-        tactics_per_category = []
+    @profile.setter
+    def profile(self, profile_object: object):
+        profile = profile_object["profile"]
+        self._profile = profile
 
-        # transverse the whole ttp path to get the list of abilities defined.
-        for root, dirs, files in os.walk(TTP, topdown=False):
-            for dir_i in dirs:
-                # identify if the current abilities path exists
-                curr_abs_path = os.path.join(os.path.join(TTP, dir_i), 'abilities.yml')
+        self.logic = profile["logic"]
+        self.schema = Schema(profile["schema"])
 
-                if os.path.exists(curr_abs_path):
+    def build_adversary(self, campaign: Campaign):
+        """
+        This function will create a logical decision tree based on the characteristics already given to him.
 
-                    # open the abilities file and filter it to get the set of given abilities
-                    curr_abs = yaml.safe_load(open(curr_abs_path))
-                    curr_abs = filter(lambda x: x['tactic'] in tactics, curr_abs)
+        To create this decision tree, we help ourselves with the kill-chain, to stipulate the mental process that
+        the attacker must follow, and the TTPs categories
+        """
+        tree = campaign.get_adversary_tree(self.schema)  # this is a tree
+        logic = self.get_logic()  # this is a function # self.logic
 
-                    # check if there is still any ability in the array, and if so add it with the category name
-                    # to the list
-                    if curr_abs:
-                        tactics_per_category.append((dir_i, curr_abs))
+        return tree, logic
 
-        self.abilities_ = tactics_per_category
+    def get_logic(self):
+        return getattr(Logic, self.logic)
+
+
+class Logic:
+    @staticmethod
+    def simple(tree, it: int = 5):
+        node_targets: list = []
+        node_loot: object = {}
+
+        def run_node(node, iterations, loot=None, targets: list = None):
+            # add the loot to the node
+            if loot:
+                node.add_loot(loot)
+            # add the list of targets to the node
+            if targets:
+                node.targets = targets
+
+            # sub-nodes, containing the tactic name and the techniques
+            techniques = [tactic.get_techniques() for tactic in node.tactics]
+
+            # use each technique once in the given order
+            for tactic, technique_list in techniques:
+                for technique in technique_list:
+                    # TODO perhaps send this to the worker
+                    technique._run()
+
+            # return the loot if succeeded, or if it got to the iterations limit
+            if node.success or iterations == 0:
+                return node.get_loot()
+            else:
+                return run_node(node, iterations - 1)
+
+        for tree_node in tree:
+            l_ = run_node(tree_node, iterations=it, loot=node_loot, targets=node_targets)
+            if "targets" in l_:
+                node_targets = l_["targets"]
+
+            node_loot.update(l_)
 
 
 class Network:
@@ -129,9 +145,7 @@ class Fingerprint:
 
 
 class Host:
-    """
-    Define a host target and its characteristics
-    """
+    """ Define a host target and its characteristics """
     ports: list = []  # list of open/filtered ports
     infected: bool = False  # define whether the host has been infected by the adversary or not
     rooted: bool = False  # define if the host has been rooted i.e. we have the root user for the machine
@@ -155,12 +169,12 @@ class Host:
 
     @property
     def users(self):
-        return self.users_
+        return self._users
 
     @users.setter
     def users(self, user_list):
         if user_list:
-            self.users_ = [User(user) for user in user_list]
+            self._users = [User(user) for user in user_list]
 
 
 class Port:

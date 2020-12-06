@@ -1,9 +1,10 @@
-- id: !VAR ${UUID|1234}
+- id: 1c032267-56af-4a08-a295-2d3575116230
   name: NMAP network scanner
   description: Scan external hosts for open ports and services
   tactic: technical-information-gathering
   technique: Conduct active scanning
-  payloads:
-    - scanner.sh
+  payload: scanner.sh
   commands:
     - -T4 --verbose
+  options:
+    -

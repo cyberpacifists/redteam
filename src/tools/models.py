@@ -17,7 +17,7 @@ class PermissionsLevel:
     MID = 3, 'mid'
     EXPERT = 4, 'expert'
     CUSTOM = 5, 'custom'
-    RANDOM = random.randint(0, 5), 'random'
+    RANDOM = random.randint(1, 5), 'random'
 
 
 class Permissions:
@@ -29,7 +29,7 @@ class Permissions:
 
 
 # "->" are function annotations. Normally used to know what is supposed to be the returned object type
-def replace_variables(conf: object, data: object = None, path: str = None, tag: str = '!CONF') -> yaml.SafeLoader:
+def replace_variables(path: str, conf: object, tag: str = '!CONF') -> yaml.SafeLoader:
     # ${<VARIABLE>} | ${<VARIABLE><DEFAULT_SEPARATOR><default>}
     regex = '\${(\w+|\w+\\' + DEFAULT_SEPARATOR + '\w+)}.*?'
     pattern = re.compile(regex)
@@ -61,6 +61,9 @@ def replace_variables(conf: object, data: object = None, path: str = None, tag: 
                 else:
                     variable = group
 
+                if variable == "UUID":
+                    conf[variable] = str(uuid.uuid4())
+
                 # replace the group with the value assigned to the key with name of the variable in the conf. file
                 # if the variable is not found in the conf. file, the default value will be used instead
                 value = value.replace(
@@ -72,11 +75,12 @@ def replace_variables(conf: object, data: object = None, path: str = None, tag: 
     loader.add_constructor(tag, constructor_var)
 
     if path:
-        data = open(path)
+        with open(path) as data:
+            yaml_data = yaml.load(data, Loader=loader)
+            return yaml_data
 
-    return yaml.load(data, Loader=loader)
 
-
+# Use this class only for debugging
 class Loader:
     """
     This class is meant to initialize the default parameters for a TTP given a target and, optionally,
@@ -84,6 +88,7 @@ class Loader:
     Permissions refers to the capabilities allowed for the given level i.e. NOOB, level 0, will only be able to run
     the first set of commands from the ability.
     """
+
     def __init__(self, target, level=PermissionsLevel.NOOB, abilities_path='abilities.yml', conf_path='conf.yml'):
         self.target = target
         self.permissions = Permissions(level)
@@ -100,13 +105,12 @@ class Loader:
         path, conf, permissions = init_vector
 
         conf = yaml.safe_load(open(conf))
-        abilities = replace_variables(conf, path=path)
-        abilities = replace_variables({'UUID': uuid.uuid4()}, data=abilities, tag='!VAR')
+        abilities = replace_variables(path, conf)
 
         # iterate through the abilities and replace the commands with the maximum superset.
         # i.e. level=4 -> commands[:4]
         for i, ability in enumerate(abilities):
-            permissions = abilities[i]['commands']
+            permissions = ability['commands']
 
             # check if the permissions level is set to custom.
             # if true, only the custom commands will be used
@@ -138,3 +142,47 @@ class Loader:
                 )
 
             return output
+
+
+class Schema:
+    """ Generate a list of procedures and tree pathing steps """
+    tree: list = []
+
+    def __init__(self, tactics):
+        # get the list of abilities from a list of tactics given list of string tactics
+        self.abilities = tactics
+
+    @property
+    def abilities(self):
+        return self._abilities
+
+    @abilities.setter
+    def abilities(self, tactics):
+        """
+        Set the list of abilities available given the tactics
+        tactics_per_category -> list of tuples (ttp category: str, abilities: list of objects)
+        """
+        tactics_per_category: list = []
+
+        # transverse the whole ttp path to get the list of abilities defined.
+        for root, dirs, files in os.walk(TTP, topdown=False):
+            for dir_i in dirs:
+                # identify if the current abilities path exists
+                curr_abs_path = os.path.join(os.path.join(TTP, dir_i), 'abilities.yml')
+
+                if os.path.exists(curr_abs_path):
+
+                    # open the abilities file and filter it to get the set of given abilities.
+                    # open it with the variable replacement to add missing uuids.
+                    # NOTE: abilities must be complete
+                    curr_abs = replace_variables(curr_abs_path, {})
+
+                    if tactics != "all" and type(tactics) == list:
+                        curr_abs = filter(lambda x: x['tactic'] in tactics, curr_abs)
+
+                    # check if there is still any ability in the array, and if so add it with the category name
+                    # to the list
+                    if curr_abs:
+                        tactics_per_category.append((dir_i, curr_abs))
+
+        self._abilities = tactics_per_category

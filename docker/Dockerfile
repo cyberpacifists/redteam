@@ -26,7 +26,6 @@ RUN pip install --upgrade pip
 
 ## install the pipenvironment and the pipfile based on the .lock file, containing the versioning.
 ## if the lock is out-of-date, a new one will be created with the current versions instead of failing over.
-
 RUN pip install pipenv
 
 ADD ./Pipfile .

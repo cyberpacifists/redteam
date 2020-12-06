@@ -9,13 +9,13 @@
   description: !CONF ${DESCRIPTION}
   tactic: !CONF ${TACTIC}
   technique: !CONF ${TECHNIQUE}
-  # the payloads attr is a list, just in case that one ability requires more than one file to operate, or a bunch
-  # of chained exploits.
-  payloads:
-    - !CONF ${PAYLOAD}
+  # the payload path
+  payload: !CONF ${PAYLOAD}
   # commands is special, as it is an attribute which based on the index of the list, it will determine the level
   # of expertise of the attacker, and therefore, the scope of commands at his disposition, or a chain of them.
   # special cases are the last index of the attribute, which is meant to be used with a "custom" chain of commands
   # that will be sent with the payload.
   commands:
     - !CONF ${COMMAND_NOOB}
+  options:
+    -
