@@ -28,28 +28,54 @@ import subprocess
 
 from typing import List
 
-from src.tools.models import Schema, TerminalColors
+from src.tools.models import Schema, TerminalColors, Parser, PermissionsLevel
 from src.tools.settings import TTP
 
 
 class TechniqueNode:
-    parser = None
     output: list = []
     __burn: bool = False  # use this variable to know if the technique has been used already.
 
-    def __init__(self, technique: object, callbacks):
+    def __init__(self, technique: object, callbacks, level, ):
         # private vars
         self.__technique = technique
         self.__callbacks = callbacks
 
-        # TODO implement the weights into the techniques
-        self.weight = 100
+        self.level, self.skill_level = level
 
         # attrs
-        self.name = technique['technique']
-        self.commands = technique['commands']
+        # TODO load this as a dictionary of **kwargs
+        self.name = technique['name']
+        self.technique = technique['technique']
+        self.commands_ = technique['commands']  # commands is a python keyword, careful!
         self.payload = technique['payload']
-        self.options = technique['options']
+        self.options = technique['options'] if technique['options'] else []
+        self.parser = technique['parser']
+        self.weight = technique['weight'] if technique['weight'] else 100
+
+    @property
+    def commands_(self):
+        return self._commands
+
+    @commands_.setter
+    def commands_(self, commands):
+        # based on the permissions level, define the number of commands allowed for the adversary to run on his
+        # behalf. Whereas the commands will stack until the given level, or use the custom command if so.
+        if self.level < PermissionsLevel.CUSTOM[0]:
+            commands = commands[:self.level]
+        elif self.level == PermissionsLevel.CUSTOM[0]:
+            commands = commands[self.level]
+
+        self._commands = commands
+
+    @property
+    def parser(self):
+        return self._parser
+
+    @parser.setter
+    def parser(self, parser_plan_path):
+        if parser_plan_path:
+            self._parser = Parser(parser_plan_path)
 
     def __str__(self):
         return self.name
@@ -60,21 +86,21 @@ class TechniqueNode:
 
     def _run(self):
         callback = self.__callbacks["run"]
-        callback(self, verbose=True)
+        callback(self)
 
     # Public method to use the technique
     def use(self, output):
         self.burn()
 
-        # if there is a parser in place, parse the output to collect the loot
-        if self.parser:
-            loot = self.parser(output)
-            # Notify the artifact of the loot collected during the run
-            self.__notify(loot)
-
         # include the current output, without parsing, into the techniques output record
         from datetime import datetime
         self.output.append((datetime.now(), output))
+
+        # if there is a parser in place, parse the output to collect the loot
+        if self.parser:
+            loot = self.parser.maraud(output.stdout.decode("utf-8"))
+            # Notify the artifact of the loot collected during the run
+            self.__notify(loot)
 
     def is_burnt(self):
         return self.__burn
@@ -161,7 +187,7 @@ class ArtifactNode:
         payload = [os.path.join(self.path, technique.payload)]
 
         # combination of arguments, commands, options and targets.
-        arguments = build_arguments(commands=technique.commands, options=technique.options, targets=self.targets)
+        arguments = build_arguments(commands=technique.commands_, options=technique.options, targets=self.targets)
 
         # try to give access to the current payload to be run first
         # in case this does not work, try with 744 mode
@@ -187,8 +213,14 @@ class ArtifactNode:
     def add_loot(self, loot):
         self.__loot.update(loot)
 
-        # compare the loot to the flag
-        self.check_flag(loot)
+        # compare the loot flag to the actual flag
+        flags = loot['flag']
+
+        for flag in flags:
+            self.check_flag(flag)
+
+            if self.success:
+                return flag
 
     def get_loot(self):
         return self.__loot
@@ -200,7 +232,7 @@ class ArtifactNode:
         if check:
             self.success = True
 
-        return check
+        return flag
 
     def set_targets(self, targets: list):
         self.targets = targets
@@ -223,9 +255,9 @@ class Campaign:
     __nodes: List[ArtifactNode] = []
     __built: bool = False
 
-    def __init__(self, schema: Schema, flags: object):
-        self.__schema = schema
-        self.abilities = schema.abilities
+    def __init__(self, techniques, flags: object):
+        self.__schema = Schema(techniques)
+        self.abilities = self.__schema.abilities
         self.flags: object = flags
 
     def get_abilities_intersection(self, abilities):
@@ -243,12 +275,19 @@ class Campaign:
 
         return ttp
 
-    def get_adversary_tree(self, adversary_schema: Schema):
+    def get_adversary_tree(self, adversary_schema: Schema, weights: object, adversary_level: str = "NOOB"):
         """ Based on an adversary schema, build the tree """
 
+        # load the difficulty level
+        level = getattr(PermissionsLevel, adversary_level)
+
         # get the intersection between the campaign abilities and the adversary abilities, and rebuild the tree.
+        # since we are setting the abilities in the campaign as well, we do not need to given them to the
+        # builder, as it will grab them from the local scope.
         self.abilities = self.get_abilities_intersection(adversary_schema.abilities)
-        tree = self.build(abilities=self.abilities)
+        self.abilities = Schema.add_weights(self.abilities, weights)
+
+        tree = self.build(level=level)
 
         return tree
 
@@ -256,7 +295,7 @@ class Campaign:
         if self.__built:
             return self.__nodes
 
-    def build(self, flags: object = None, abilities=None):
+    def build(self, flags: object = None, abilities=None, level=PermissionsLevel.NOOB):
         """ Build the nodes tree based on the given abilities """
         def sort_abilities(abs_list):
             """ Sort the techniques from the abilities object """
@@ -294,7 +333,8 @@ class Campaign:
 
                 # create technique nodes and add them to the tactic
                 for technique in techniques:
-                    tactic.add_technique(TechniqueNode(technique, callbacks))
+                    t_ = TechniqueNode(technique=technique, callbacks=callbacks, level=level)
+                    tactic.add_technique(t_)
 
                 category.add_tactic(tactic)
 

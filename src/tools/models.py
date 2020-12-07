@@ -148,16 +148,31 @@ class Schema:
     """ Generate a list of procedures and tree pathing steps """
     tree: list = []
 
-    def __init__(self, tactics):
-        # get the list of abilities from a list of tactics given list of string tactics
-        self.abilities = tactics
+    def __init__(self, techniques):
+        # get the list of abilities from a list of techniques given list of string tactics
+        self.techniques_ = techniques
+        self.abilities = self.techniques_
+
+    @property
+    def techniques_(self):
+        return self._techniques
+
+    @techniques_.setter
+    def techniques_(self, techniques):
+        tec_type = type(techniques)
+
+        if tec_type == dict:
+            self.weights = techniques
+            techniques = techniques.keys()
+
+        self._techniques = techniques
 
     @property
     def abilities(self):
         return self._abilities
 
     @abilities.setter
-    def abilities(self, tactics):
+    def abilities(self, techniques):
         """
         Set the list of abilities available given the tactics
         tactics_per_category -> list of tuples (ttp category: str, abilities: list of objects)
@@ -177,8 +192,8 @@ class Schema:
                     # NOTE: abilities must be complete
                     curr_abs = replace_variables(curr_abs_path, {})
 
-                    if tactics != "all" and type(tactics) == list:
-                        curr_abs = filter(lambda x: x['tactic'] in tactics, curr_abs)
+                    if techniques != "all" and type(techniques) == list:
+                        curr_abs = filter(lambda x: x['technique'] in techniques, curr_abs)
 
                     # check if there is still any ability in the array, and if so add it with the category name
                     # to the list
@@ -186,3 +201,84 @@ class Schema:
                         tactics_per_category.append((dir_i, curr_abs))
 
         self._abilities = tactics_per_category
+
+    @staticmethod
+    def add_weights(techniques, weights):
+        # small mapper function that takes an argument "element" and attempts to find its weight
+        def mapper(element):
+            # tuple( category, List[abilities_object] )
+
+            def update_weights(li_el):
+                if li_el["technique"] in weights:
+                    li_el["weight"] = weights[li_el["technique"]]
+
+                return li_el
+
+            cat, li = element
+            li = map(update_weights, li)
+
+            return cat, li
+
+        weighted_abilities = map(mapper, techniques)
+
+        return list(weighted_abilities)
+
+
+class Parser:
+    """ Generic parser to find all kinds of loot information """
+    loot: object = {}
+
+    def __init__(self, parser):
+
+        # load the content of the parser plan into the variable
+        plan = Parser.load_plan(parser)
+
+        self.mapping = plan['mapping']
+        self.flag = plan['flag']
+        self.miners: object = plan['miners'] if plan['miners'] else {}
+
+    def maraud(self, output):
+        """ Look for loot based on the given expressions and the pre-defined ones """
+        self.loot["ip"] = Parser.ip(output)
+        self.loot["email"] = Parser.email(output)
+        self.loot["filename"] = Parser.filename(output)
+
+        for key, match in self.miners.items():
+            self.loot[key] = self.search_match(match, output)
+
+        self.loot["flag"] = self.search_match(self.flag, output)
+
+        return self.loot
+
+    @staticmethod
+    def load_plan(plan):
+        plan_type = type(plan)
+
+        # check if the plan is a path string, and if so, find the file and load the content
+        if plan_type == str:
+            path = os.path.join(BASE_DIR, "tools", "parsers", plan)
+
+            with open(path) as data:
+                return yaml.safe_load(data)
+
+        elif plan_type == object:
+            return plan
+
+        else:
+            raise TypeError
+
+    @staticmethod
+    def search_match(match, blob):
+        return re.findall(match, blob)
+
+    @staticmethod
+    def ip(blob):
+        return re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', blob)
+
+    @staticmethod
+    def email(blob):
+        return re.findall(r'[\w.-]+@[\w.-]+', blob)
+
+    @staticmethod
+    def filename(blob):
+        return re.findall(r'\b\w+\.\w+', blob)

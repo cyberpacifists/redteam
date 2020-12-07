@@ -2,7 +2,8 @@
   name: NMAP network scanner
   description: Scan external hosts for open ports and services
   tactic: technical-information-gathering
-  technique: Conduct active scanning
+  technique: conduct-active-scanning
+  parser: nmap.yml
   payload: scanner.sh
   commands:
     - -T4 --verbose

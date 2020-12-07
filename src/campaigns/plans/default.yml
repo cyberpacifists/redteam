@@ -1,0 +1,7 @@
+---
+# give a list of all the techniques.
+techniques: all
+
+# define the flags for each step in the cyber-kill chain
+flags:
+  reconnaissance: 0.0.0.0

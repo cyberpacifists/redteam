@@ -40,6 +40,7 @@ class Adversary:
                 n_ = Network(network)
                 networks.append(n_)
 
+        self.targets = network_addresses
         self.networks_ = networks
 
     @property
@@ -48,11 +49,11 @@ class Adversary:
 
     @profile.setter
     def profile(self, profile_object: object):
-        profile = profile_object["profile"]
+        profile = profile_object
         self._profile = profile
 
         self.logic = profile["logic"]
-        self.schema = Schema(profile["schema"])
+        self.schema = Schema(profile["techniques"])
 
     def build_adversary(self, campaign: Campaign):
         """
@@ -61,7 +62,8 @@ class Adversary:
         To create this decision tree, we help ourselves with the kill-chain, to stipulate the mental process that
         the attacker must follow, and the TTPs categories
         """
-        tree = campaign.get_adversary_tree(self.schema)  # this is a tree
+        tree = campaign.get_adversary_tree(self.schema, adversary_level=self.profile["level"],
+                                           weights=self.schema.weights)  # this is a tree
         logic = self.get_logic()  # this is a function # self.logic
 
         return tree, logic
@@ -90,8 +92,11 @@ class Logic:
             # use each technique once in the given order
             for tactic, technique_list in techniques:
                 for technique in technique_list:
+
+                    ######################################
                     # TODO perhaps send this to the worker
                     technique._run()
+                    ######################################
 
             # return the loot if succeeded, or if it got to the iterations limit
             if node.success or iterations == 0:
