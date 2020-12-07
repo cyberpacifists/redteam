@@ -18,28 +18,7 @@ to-do:
 """
 
 from abc import ABC, abstractmethod # to implement interfaces in python
-
-from .errors import ActionExecutionError
-
-
-class MetasploitExecutor():
-    """Executes an arbitrary Metasploit module"""
-    def __init__(self, module_name):
-        self.kind = 'msfrpc'
-        self.module_name = module_name
-    def execute(self, worker, parameters):
-        if '_timeout' in parameters:
-            timeout = parameters['_timeout']
-        else:
-            timeout = None
-        commands = [
-            f'use {self.module_name}'
-        ]
-        for key, value in parameters.items():
-            if not key.startswith('_'):
-                commands.append(f'set {key} {value}')
-        commands.append('run -z')
-        worker.execute('\n'.join(commands), wait=True, timeout=timeout)
+from collections import Iterable
 
 
 class Tactic(ABC): # pylint: disable=too-few-public-methods
@@ -119,47 +98,39 @@ class NetworkServiceScanningTechnique(
     DiscoveryTactic
 ):
     technique_id = 'T1046'
-    name = 'Network Service Scanning',
+    name = 'Network Service Scanning'
 
 
 class SynNetworkServiceScanningTechnique(
-    MetasploitExecutor,
     NetworkServiceScanningTechnique
 ):
     technique_id = 'T1046.401'
-    name = 'SYN Network Service Scanning',
+    name = 'SYN Network Service Scanning'
     skill_score = 10
     stealth_score = 60
     module_name = 'auxiliary/scanner/portscan/syn'
-    def __init__(self):
-        super().__init__(self.module_name)
-
-class NetworkServiceScanningTechnique(
-    MetasploitExecutor,
-    Technique,
-    DiscoveryTactic
-):
-    technique_id = 'T1046'
-    name = 'Network Service Scanning',
-    skill_score = 5
-    stealth_score = 60
-    module_name = 'exploits/unix/webapp/wp_phpmailer_host_header'
-    def __init__(self):
-        super().__init__(self.module_name)
+    def execute(self, worker, parameters):
+        worker.execute_module(self.module_name, parameters, wait=True, timeout=90)
 
 
 class ExploitationOfRemoteServicesTechnique(
-    MetasploitExecutor,
     Technique,
     LateralMovementTactic
 ):
     technique_id = 'T1210'
-    name = 'Exploitation of Remote Services',
+    name = 'Exploitation of Remote Services'
+
+
+class WordpressPhpmailerHostHeaderExploitation(
+    ExploitationOfRemoteServicesTechnique
+):
+    technique_id = 'T1210.401'
+    name = 'wp_phpmailer_host_header exploit'
     skill_score = 50
     stealth_score = 50
     module_name = 'exploits/unix/webapp/wp_phpmailer_host_header'
-    def __init__(self):
-        super().__init__(self.module_name)
+    def execute(self, worker, parameters):
+        worker.execute_module(self.module_name, parameters, wait=True, timeout=90)
 
 
 class OSCredentialDumpingTechnique(Technique, CredentialAccessTactic):
@@ -168,7 +139,6 @@ class OSCredentialDumpingTechnique(Technique, CredentialAccessTactic):
 
 
 class DumpWordpressConfigTechnique(
-    MetasploitExecutor,
     OSCredentialDumpingTechnique
 ):
     technique_id = 'T1003.401'
@@ -176,8 +146,8 @@ class DumpWordpressConfigTechnique(
     skill_score = 15
     stealth_score = 95
     module_name = 'post/linux/gather/enum_wordpress'
-    def __init__(self):
-        super().__init__(self.module_name)
+    def execute(self, worker, parameters):
+        worker.execute_module(self.module_name, parameters, wait=True, timeout=120)
 
 
 # class ExecuteSessionCommandTechnique(Technique):

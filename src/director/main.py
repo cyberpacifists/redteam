@@ -14,7 +14,7 @@ from .actions import Action
 from .errors import ActionExecutionError
 from .errors import ActionTimeoutError
 from .tactics import DumpWordpressConfigTechnique
-from .tactics import ExploitationOfRemoteServicesTechnique
+from .tactics import WordpressPhpmailerHostHeaderExploitation
 from .tactics import SynNetworkServiceScanningTechnique
 
 
@@ -66,7 +66,7 @@ discover_webapps = Action(
 wordpress_exploit = Action(
     phase=4,
     name='Exploit Wordpress vulnerability',
-    technique=ExploitationOfRemoteServicesTechnique(),
+    technique=WordpressPhpmailerHostHeaderExploitation(),
     targets=['172.19.0.7'],
     timeout=90,
     goals={
