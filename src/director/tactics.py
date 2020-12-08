@@ -68,7 +68,7 @@ class Technique(ABC):
         pass
 
     @abstractmethod
-    def execute(self, worker, parameters):
+    def execute(self, worker, parameters, wait=True, timeout=None):
         pass
 
 
@@ -101,16 +101,61 @@ class NetworkServiceScanningTechnique(
     name = 'Network Service Scanning'
 
 
-class SynNetworkServiceScanningTechnique(
+class SimpleNetworkServiceScanningTechnique(
+    NetworkServiceScanningTechnique
+):
+    technique_id = 'T1046.402'
+    name = 'Simple Network Service Scanning'
+    skill_score = 10
+    stealth_score = 30
+    commands = [
+        'db_nmap -sV -sS -T aggressive --exclude msf,db {RHOSTS}'
+    ]
+    def execute(self, worker, parameters, wait=True, timeout=600):
+        worker.execute(
+            '\n'.join(self.commands).format(**parameters),
+            wait=wait,
+            timeout=timeout
+        )
+
+
+class NmapNetworkServiceScanningTechnique(
     NetworkServiceScanningTechnique
 ):
     technique_id = 'T1046.401'
-    name = 'SYN Network Service Scanning'
-    skill_score = 10
-    stealth_score = 60
-    module_name = 'auxiliary/scanner/portscan/syn'
-    def execute(self, worker, parameters):
-        worker.execute_module(self.module_name, parameters, wait=True, timeout=90)
+    name = 'Nmap Network Service Scanning'
+    skill_score = 20
+    stealth_basescore = 40
+    stealth_score = stealth_basescore
+    def __init__(self, scan_type='S', stealthiness=30, arguments=''):
+        # we combine a basescore and the stealthiness parameter to produce a final stealth_score
+        self.stealth_score = min(80, max(
+            10,
+            self.stealth_basescore + ((50-stealthiness)/2)
+        ))
+        argument_t_options = set([0, 1, 2, 3, 4, 5])
+        argument_t = round(5 - ( stealthiness / (100/(len(argument_t_options))) ))
+        self.command_base = f'db_nmap -s{scan_type} -T{argument_t} {arguments}'
+    def execute(self, worker, parameters, wait=True, timeout=600):
+        command = self.command_base + ' {RHOSTS}'
+        worker.execute(
+            command.format(**parameters),
+            wait=wait,
+            timeout=timeout
+        )
+
+
+
+# class SynNetworkServiceScanningTechnique(
+#     NetworkServiceScanningTechnique
+# ):
+#     technique_id = 'T1046.402'
+#     name = 'SYN Network Service Scanning'
+#     skill_score = 10
+#     stealth_score = 60
+#     module_name = 'auxiliary/scanner/portscan/syn'
+#     def execute(self, worker, parameters):
+#         worker.execute_module(self.module_name, parameters, wait=True, timeout=90)
 
 
 class ExploitationOfRemoteServicesTechnique(
@@ -129,8 +174,8 @@ class WordpressPhpmailerHostHeaderExploitation(
     skill_score = 50
     stealth_score = 50
     module_name = 'exploits/unix/webapp/wp_phpmailer_host_header'
-    def execute(self, worker, parameters):
-        worker.execute_module(self.module_name, parameters, wait=True, timeout=90)
+    def execute(self, worker, parameters, wait=True, timeout=90):
+        worker.execute_module(self.module_name, parameters, wait=wait, timeout=timeout)
 
 
 class OSCredentialDumpingTechnique(Technique, CredentialAccessTactic):
@@ -146,8 +191,8 @@ class DumpWordpressConfigTechnique(
     skill_score = 15
     stealth_score = 95
     module_name = 'post/linux/gather/enum_wordpress'
-    def execute(self, worker, parameters):
-        worker.execute_module(self.module_name, parameters, wait=True, timeout=120)
+    def execute(self, worker, parameters, wait=True, timeout=120):
+        worker.execute_module(self.module_name, parameters, wait=wait, timeout=timeout)
 
 
 # class ExecuteSessionCommandTechnique(Technique):

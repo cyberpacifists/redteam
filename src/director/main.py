@@ -15,7 +15,8 @@ from .errors import ActionExecutionError
 from .errors import ActionTimeoutError
 from .tactics import DumpWordpressConfigTechnique
 from .tactics import WordpressPhpmailerHostHeaderExploitation
-from .tactics import SynNetworkServiceScanningTechnique
+from .tactics import SimpleNetworkServiceScanningTechnique
+from .tactics import NmapNetworkServiceScanningTechnique
 
 
 # _appconfig = None
@@ -43,9 +44,9 @@ _exit = False
 discover_webapps = Action(
     phase=1,
     name='Discover web apps',
-    technique=SynNetworkServiceScanningTechnique(),
-    targets=['172.19.0.7/32'],
-    timeout=600, # ioctl errors are shown, but do not worry, it works (but it's slow)
+    technique=NmapNetworkServiceScanningTechnique(scan_type='S', stealthiness=0),
+    targets=['172.19.0.7/29'],
+    timeout=600,
     goals={
         'goals': [
             {

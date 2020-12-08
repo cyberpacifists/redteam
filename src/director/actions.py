@@ -25,6 +25,7 @@ class Action():
         targets=None,
         targets_query=None,
         max_targets=10,
+        wait=True,
         timeout=None
     ):
         self.uid = f'a-{shortuuid.uuid()[:4]}'
@@ -35,6 +36,7 @@ class Action():
         self.targets = set(targets) if targets else set()
         self.targets_query = targets_query
         self.max_targets = max_targets
+        self.wait = wait
         self.timeout = timeout
         self.attempts = 0
         self.succeeded = False
@@ -77,9 +79,12 @@ class Action():
         }
         if self._session_id:
             parameters['SESSION'] = self._session_id
+        kwargs = {}
+        if self.wait:
+            kwargs['wait'] = self.wait
         if self.timeout:
-            parameters['_timeout'] = self.timeout
-        self.technique.execute(worker, parameters)
+            kwargs['timeout'] = self.timeout
+        self.technique.execute(worker, parameters, **kwargs)
 
     def verify_goals(self, worker, refresh=False):
         if self.succeeded and not refresh:
