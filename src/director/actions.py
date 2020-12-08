@@ -52,10 +52,14 @@ class Action():
         # or use simple commands like vulns, then parse in this python
         if 'session' in self.targets_query:
             self.targets.add('172.19.0.7')
-            session_id = list(worker.client().sessions.list.keys())[-1]
-            print(f'Found session={session_id}')
-            self._session_id = session_id
-            return session_id
+            session_id, _ = worker.find_last_session(
+                self.targets_query['session'],
+                {}
+            )
+            if session_id:
+                print(f'Found session={session_id}')
+                self._session_id = session_id
+                return session_id
         if not self.targets:
             self.targets = set([
                 '172.19.0.3',
