@@ -139,7 +139,6 @@ class MsfRpcWorker(Worker):
             for prop, value in properties.items():
                 if value in interpolations:
                     value = interpolations[value]
-                    value = service.get(prop)
                 if not service.get(prop) or (service.get(prop) != value and value != '@NOTNULL@'):
                     match = False
                     break
@@ -157,7 +156,6 @@ class MsfRpcWorker(Worker):
             for prop, value in properties.items():
                 if value in interpolations:
                     value = interpolations[value]
-                    value = host.get(prop)
                 if not host.get(prop) or (host.get(prop) != value and value != '@NOTNULL@'):
                     match = False
                     break
