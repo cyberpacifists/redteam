@@ -70,11 +70,6 @@ services:
      - "8080:80"
     links:
       - wordpress-mysql
-    # unix/webapp/wp_phpmailer_host_header
-    # set RHOSTS wordpress
-    # cat /var/www/html/wp-config.php
-    # fail: execute -f /bin/grep -a DB_PASSWORD /var/www/html/wp-config.php
-
 
   wordpress-mysql:
     image: mysql:5
