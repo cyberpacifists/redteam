@@ -787,7 +787,7 @@ class AdversaryTree:
 
 
 class Logic:
-    local_network: str = "192.168.0.0/24"
+    defenders_network: str = DEFENDERS_NETWORK
 
     @staticmethod
     def build_preconditions_treasure(preconditions: dict = None):
@@ -806,7 +806,7 @@ class Logic:
             if extra:
                 pre_loot.add_to_loot(**extra)
         else:
-            pre_loot = Loot(target=Logic.local_network, treasure_cb=treasure.scatter)
+            pre_loot = Loot(target=Logic.defenders_network, treasure_cb=treasure.scatter)
 
         treasure.add_loot(pre_loot)
         return treasure
