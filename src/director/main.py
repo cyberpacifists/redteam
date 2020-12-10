@@ -75,7 +75,7 @@ wordpress_exploit = Action(
             {
                 'name': 'wordpress-session',
                 'assert_session': {
-                    'host': '@TARGET@',
+                    'target_host': '@TARGET@',
                 }
             }
         ]
@@ -88,7 +88,7 @@ wordpress_dump_config = Action(
     timeout=180,
     targets_query={
         'session': {
-            'host': '172.19.0.7',
+            'target_host': '172.19.0.7',
         }
     },
     goals={
@@ -166,6 +166,7 @@ def plan_next_action(worker):
     #     sys.exit(0)
 
     # XXX we need a tree here instead of this hardcoded path
+    # return wordpress_exploit
     if wordpress_dump_config.verify_goals(worker):
         print('\n\n******************\n\nFLAG CAPTURED\n\n******************\n')
         sys.exit(0)

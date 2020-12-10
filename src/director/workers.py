@@ -195,8 +195,23 @@ class MsfRpcWorker(Worker):
 
     def _find_sessions(self, properties, interpolations):
         """Find a session with all the given properties"""
-        # XXX filter sessions
-        if self.client().sessions.list:
-            # print(self.client().sessions.list)
-            return next(iter(self.client().sessions.list.values()))
-        return None
+        matching_sessions = {}
+        for session_id, session in self.client().sessions.list.items():
+            match = True
+            for prop, value in properties.items():
+                if value in interpolations:
+                    value = interpolations[value]
+                if not session.get(prop) or (session.get(prop) != value and value != '@NOTNULL@'):
+                    match = False
+                    break
+            if match:
+                matching_sessions[session_id] = session
+        return matching_sessions
+
+    def find_last_session(self, properties, interpolations):
+        """Find last used session that match all the given properties"""
+        matching_sessions = self._find_sessions(properties, interpolations)
+        if matching_sessions:
+            sorted_keys = list(sorted(matching_sessions.keys()))
+            return sorted_keys[-1], matching_sessions[sorted_keys[-1]]
+        return '', {}
