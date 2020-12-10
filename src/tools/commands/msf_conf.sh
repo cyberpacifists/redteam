@@ -1,7 +1,3 @@
-metasploit() {
-    docker run --rm -it -v "${HOME}/.msf4:/home/msf/.msf4" metasploitframework/metasploit-framework ./msfconsole "$@"
-}
-
 sh -c "echo 'production:
   adapter: postgresql
   database: $DATABASE_DB

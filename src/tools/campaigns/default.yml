@@ -1,7 +1,7 @@
 ---
 adversary: hacker
 preconditions:
-  target: 192.168.0.0/24
+  target: 192.168.0.29
   extra:
     ip: 192.0.0.0
 schema:

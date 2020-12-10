@@ -10,5 +10,6 @@
   payload: msf.py
   commands:
     - "use post/linux/gather/enum_wordpress"
+  options:
     # - "set SESSION 1"
     - "run"

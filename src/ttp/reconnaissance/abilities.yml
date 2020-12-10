@@ -8,7 +8,10 @@
   parser: nmap.yml
   payload: scanner.sh
   commands:
-    - "-T4 --verbose #{TARGET}"
+    - "-T4 --verbose"
+  options:
+    - "#{TARGET}"
+
 
 - id: 2
   name: MSF SYN Network Service Scanning
@@ -19,9 +22,10 @@
   payload: msf.py
   commands:
     - "use auxiliary/scanner/portscan/syn"
-    - "set RHOSTS #{TARGET}"
     - "set INTERFACE eth0"
     - "set THREADS 50"
+  options:
+    - "set RHOSTS #{TARGET}"
     - "run"
 
 - id: 3
@@ -35,6 +39,7 @@
   payload: msf.py
   commands:
     - "use auxiliary/scanner/ftp/ftp_version"
-    - "set RHOSTS #{TARGET}"
     - "set THREADS 20"
+  options:
+    - "set RHOSTS #{TARGET}"
     - "run"

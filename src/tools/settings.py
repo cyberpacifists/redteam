@@ -28,4 +28,3 @@ DATABASES = {
 
 ADVERSARY = os.environ.get('ADVERSARY', 'hacker')
 CAMPAIGN = os.environ.get('CAMPAIGN', 'default')
-NETWORKS = os.environ.get('NETWORKS', '0.0.0.0')

@@ -11,6 +11,6 @@ then
   echo "PostgreSQL started"
 fi
 
-python ttp/exploitation/test.py
+python -m planner
 
 exec "$@"
