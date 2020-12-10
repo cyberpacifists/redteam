@@ -38,8 +38,6 @@ services:
     image: metasploitframework/metasploit-framework
     ports:
       - 55553:55553
-    # This command included: -S
-    command: ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
     volumes:
       - ./src/data/msf:/home/msf/.msf4/
     env_file:
@@ -47,6 +45,16 @@ services:
     networks:
       - adversary
       - default
+    stdin_open: true
+    tty: true
+    command:
+      - "./msfconsole"
+      - "-r"
+      - "docker/msfconsole.rc"
+      - "-y"
+      - "$APP_HOME/config/database.yml"
+      - "-x"
+      - "load msgrpc ServerHost=$$MSFRPC_HOST ServerPort=$$MSFRPC_PORT User=$$MSFRPC_USER Pass=$$MSFRPC_PASSWORD"
 
 volumes:
   postgres_data:
