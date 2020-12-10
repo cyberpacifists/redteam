@@ -2,55 +2,6 @@ version: "3.7"
 
 services:
 
-  msfrpc:
-    image: metasploitframework/metasploit-framework
-    ports:
-      - 55553:55553
-    command:
-      - "./msfrpcd"
-      - "-a"
-      - "0.0.0.0"
-      - "-p"
-      - "55553"
-      - "-S"
-      - "-U"
-      - "director"
-      - "-P"
-      - "directorU123"
-      - "-f"
-    environment: 
-      DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
-    links:
-      - target1
-      - target2
-      - target3
-    depends_on:
-      - target1
-      - target2
-      - target3
-
-  msfconsole:
-    image: metasploitframework/metasploit-framework
-    stdin_open: true
-    tty: true
-    # ports:
-    #   - 4444:4444
-    environment: 
-      DATABASE_URL: postgres://msf:msfdbu123@db:5432/msfdb
-      # MSF_UID: 1001
-      # MSF_GID: 1001
-    # volumes: 
-    #   - ./data/msf:/home/msf/.msf4
-    links:
-      - target1
-      - target2
-      - target3
-      - wordpress
-    depends_on:
-      - target1
-      - target2
-      - target3
-
   target1:
     image: citizenstig/dvwa # dvwa
     environment:
@@ -63,6 +14,8 @@ services:
       interval: 5s
       retries: 3
       start_period: "10"
+    networks:
+      - defenders
 
   target2:
     image: hmlio/vaas-cve-2014-6271 # shellshock
@@ -72,9 +25,13 @@ services:
       test: "curl -f localhost:80"
       interval: 5s
       retries: 3
+    networks:
+      - defenders
 
   target3:
     image: penkit/vsftpd:2.3.4 # vsftpd backdoor, do not trust this image
+    networks:
+      - defenders
 
   wordpress:
     image: vulhub/wordpress:4.6
@@ -94,8 +51,17 @@ services:
     # cat /var/www/html/wp-config.php
     # fail: execute -f /bin/grep -a DB_PASSWORD /var/www/html/wp-config.php
 
+    networks:
+      - defenders
+
 
   wordpress-mysql:
     image: mysql:5
     environment: 
      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - defenders
+
+networks:
+  defenders:
+    name: defenders

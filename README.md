@@ -21,15 +21,10 @@ Red Team simulation
 
 1. Install docker and docker-compose
 
-
-
-
 ## Usage
 
-1. Start the database: `docker-compose -f docker-compose-db.yml up -t 2`
-   (persistence is disabled, removing the container will reset the data)
-1. Start workers: `docker-compose -f docker-compose-workers.yml up -t 2`
-1. Start the director: `docker-compose up --build -t 2`
+1. Start defenders: `docker-compose -f docker-compose.defenders.yml up -t 2`
+1. Start the adversary: `docker-compose up --build -t 2`
 
 
 ## Development
@@ -38,30 +33,24 @@ Red Team simulation
 
 Use one branch per feature so we can merge in small change increments: `git checkout main && git pull && git checkout -b my-branch-name`
 
-### Run tests
-
-```docker-compose -f docker-compose-tests.yml up --build```
-
 ### Using your local python
 
 You should normally use `docker-compose up` instead of running your own python, but if for some reason you need local development:
+You should decide on which campaign and which adversary to run. Feel free to change the defaults in src/tools/settings or use environment variables
 
 ```
 pip install --user pipenv
 cd redteam/src
 pipenv shell
 pipenv install --dev
-python -m director
+python -m planner
 ```
-
-
 
 ## Manual use of metasploit
 
 If you want to debug the state of the database or perform 
 manual actions in metasploit, you can connect to the
-msfconsole by ```docker attach redteam_msfconsole_1```
-
+msfconsole by ```docker attach redteam_msf_1```
 
 <details>
   <summary>Remote code execution exploiting Shellshock</summary>
@@ -99,7 +88,6 @@ host        port  proto  name   state  info
 Let's assume you expect the host to be vulnerable to shellshock, let's exploit it:
 ```
 > use exploit/multi/http/apache_mod_cgi_bash_env_exec
-> show options
 > set RHOSTS target2
 > set TARGETURI /cgi-bin/stats
 ```
