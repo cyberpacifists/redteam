@@ -124,7 +124,7 @@ class Loader:
 
         self.abilities_ = abilities
 
-    def run(self, verbose=False) -> subprocess.CompletedProcess:
+    def run(self, verbose=True) -> subprocess.CompletedProcess:
         for ability in self.abilities:
             # try to give access to the current payload to be run first
             chmod_args = ['chmod', '+x'] + ability['payloads']
@@ -148,69 +148,84 @@ class Schema:
     """ Generate a list of procedures and tree pathing steps """
     tree: list = []
 
-    def __init__(self, techniques):
-        # get the list of abilities from a list of techniques given list of string tactics
-        self.techniques_ = techniques
-        self.abilities = self.techniques_
+    def __init__(self, schema: object, attr="id"):
+        self.__schema = schema
+        self.attr = attr
+        self.abilities = self.__schema
+        self.weights = self.__schema
+        self.flags = self.__schema
 
     @property
-    def techniques_(self):
-        return self._techniques
+    def flags(self):
+        return self._flags
 
-    @techniques_.setter
-    def techniques_(self, techniques):
-        tec_type = type(techniques)
+    @flags.setter
+    def flags(self, schema):
 
-        if tec_type == dict:
-            self.weights = techniques
-            techniques = techniques.keys()
+        try:
+            flags = {category: item["flag"] for category, item in schema.items()}
+            self._flags = flags
+        except:
+            # print("schema does not contain flags")
+            pass
 
-        self._techniques = techniques
+    @property
+    def weights(self):
+        return self._weights
+
+    @weights.setter
+    def weights(self, schema):
+
+        try:
+            weights = {technique: val
+                       for category, item in schema.items()
+                       for technique, val in item["techniques"].items()
+                       if type(item) == dict}
+
+            self._weights = weights
+        except:
+            # print("schema does not contain weights")
+            pass
 
     @property
     def abilities(self):
         return self._abilities
 
     @abilities.setter
-    def abilities(self, techniques):
+    def abilities(self, schema):
         """
         Set the list of abilities available given the tactics
         tactics_per_category -> list of tuples (ttp category: str, abilities: list of objects)
         """
         tactics_per_category: list = []
 
-        # transverse the whole ttp path to get the list of abilities defined.
-        for root, dirs, files in os.walk(TTP, topdown=False):
-            for dir_i in dirs:
-                # identify if the current abilities path exists
-                curr_abs_path = os.path.join(os.path.join(TTP, dir_i), 'abilities.yml')
+        for category, item in schema.items():
+            curr_path = os.path.join(TTP, category, "abilities.yml")
+            curr_abs = replace_variables(curr_path, {})
+            techniques = item["techniques"]
 
-                if os.path.exists(curr_abs_path):
+            if techniques != "all":
 
-                    # open the abilities file and filter it to get the set of given abilities.
-                    # open it with the variable replacement to add missing uuids.
-                    # NOTE: abilities must be complete
-                    curr_abs = replace_variables(curr_abs_path, {})
+                if type(techniques) == dict:
+                    techniques = techniques.keys()
 
-                    if techniques != "all" and type(techniques) == list:
-                        curr_abs = filter(lambda x: x['technique'] in techniques, curr_abs)
+                curr_abs = list(filter(lambda x: x[self.attr] in techniques, curr_abs))
 
-                    # check if there is still any ability in the array, and if so add it with the category name
-                    # to the list
-                    if curr_abs:
-                        tactics_per_category.append((dir_i, curr_abs))
+            if curr_abs:
+                tactics_per_category.append((category, curr_abs))
 
         self._abilities = tactics_per_category
 
     @staticmethod
-    def add_weights(techniques, weights):
+    def add_weights(techniques, schema):
         # small mapper function that takes an argument "element" and attempts to find its weight
+
         def mapper(element):
             # tuple( category, List[abilities_object] )
 
             def update_weights(li_el):
-                if li_el["technique"] in weights:
-                    li_el["weight"] = weights[li_el["technique"]]
+                if li_el[schema.attr] in schema.weights:
+                    li_el["weight"] = schema.weights[li_el[schema.attr]]
 
                 return li_el
 
@@ -235,20 +250,28 @@ class Parser:
 
         self.mapping = plan['mapping']
         self.flag = plan['flag']
-        self.miners: object = plan['miners'] if plan['miners'] else {}
+        self.miners: object = plan['miners'] if "miners" in plan else None
+        self.target: object = plan['target'] if "target" in plan else None
 
     def maraud(self, output):
         """ Look for loot based on the given expressions and the pre-defined ones """
-        self.loot["ip"] = Parser.ip(output)
-        self.loot["email"] = Parser.email(output)
-        self.loot["filename"] = Parser.filename(output)
 
-        for key, match in self.miners.items():
-            self.loot[key] = self.search_match(match, output)
+        #TODO take a look at the parser
+        #output = '\n'.join(output)
 
-        self.loot["flag"] = self.search_match(self.flag, output)
+        self.loot["ip"] = self.ip(output)
+        self.loot["email"] = self.email(output)
+        self.loot["filename"] = self.filename(output)
 
-        return self.loot
+        if self.miners:
+            for key, match in self.miners.items():
+                self.loot[key] = self.search_match(match, output)
+
+        self.loot["flags"] = self.search_match(self.flag, output)
+
+        targets = self.search_match(self.target, output) if self.target else []
+
+        return targets, self.loot
 
     @staticmethod
     def load_plan(plan):
@@ -269,16 +292,20 @@ class Parser:
 
     @staticmethod
     def search_match(match, blob):
-        return re.findall(match, blob)
+        try:
+            group = re.findall(match, blob)
+            return list(set(group))
+        except Exception as e:
+            print(e)
 
-    @staticmethod
-    def ip(blob):
-        return re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', blob)
+    def ip(self, blob):
+        regex = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
+        return self.search_match(regex, blob)
 
-    @staticmethod
-    def email(blob):
-        return re.findall(r'[\w.-]+@[\w.-]+', blob)
+    def email(self, blob):
+        regex = r'[\w.-]+@[\w.-]+'
+        return self.search_match(regex, blob)
 
-    @staticmethod
-    def filename(blob):
-        return re.findall(r'\b\w+\.\w+', blob)
+    def filename(self, blob):
+        regex = r'\b\w+\.\w+'
+        return self.search_match(regex, blob)

@@ -1,0 +1,14 @@
+---
+
+- id: 5
+  name: Dump Wordpress Configuration
+  description: |
+    Dump Wordpress Configuration
+  tactic: os-credential-dumping
+  technique: msf-wp-dump-conf
+  parser: msf.yml
+  payload: msf.py
+  commands:
+    - "use post/linux/gather/enum_wordpress"
+    # - "set SESSION 1"
+    - "run"

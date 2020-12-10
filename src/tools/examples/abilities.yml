@@ -9,6 +9,7 @@
   description: !CONF ${DESCRIPTION}
   tactic: !CONF ${TACTIC}
   technique: !CONF ${TECHNIQUE}
+  parser: !CONF ${PARSER}
   # the payload path
   payload: !CONF ${PAYLOAD}
   # commands is special, as it is an attribute which based on the index of the list, it will determine the level
@@ -17,5 +18,18 @@
   # that will be sent with the payload.
   commands:
     - !CONF ${COMMAND_NOOB}
+  options:
+    -
+
+#Empty
+- id:
+  name:
+  description:
+  tactic:
+  technique:
+  parser:
+  payload:
+  commands:
+    -
   options:
     -

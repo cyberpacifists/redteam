@@ -9,7 +9,6 @@ services:
       dockerfile: docker/Dockerfile
 
     # other configuration
-    #network_mode: host
     stdin_open: true # docker -i
     tty: true # docker -t
 
@@ -20,8 +19,11 @@ services:
     # add links between the containers
     depends_on:
       - postgres
-    links:
-      - postgres:5432
+
+    networks:
+      - adversary
+      - default
+      #- master
 
   postgres:
     image: postgres:latest
@@ -29,6 +31,35 @@ services:
       - env/.env.db
     volumes:
       - postgres_data:/var/lib/postgres/data/
+    networks:
+      - adversary
+
+  msf:
+    image: metasploitframework/metasploit-framework
+    ports:
+      - 55553:55553
+    # This command included: -S
+    command: ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
+    volumes:
+      - ./src/data/msf:/home/msf/.msf4/
+    env_file:
+      - env/.env.msf
+    networks:
+      - adversary
+      - default
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+  adversary:
+    # This network is meant to be used in bridge mode between (default) between all the containers with access to it
+    # In this network we will only have
+    name: adversary
+    # driver: bridge
+  #--------------#
+  #master:
+    # Use this network to communicate/send messages between the adversary and the game-master through the Bus
+    #external:
+      #name: master

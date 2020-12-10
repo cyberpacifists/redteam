@@ -11,6 +11,6 @@ then
   echo "PostgreSQL started"
 fi
 
-python -u -m director
+python ttp/exploitation/test.py
 
 exec "$@"

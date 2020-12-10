@@ -24,34 +24,38 @@ and finally use the techniques as leaves:
 
 """
 import os
+import re
 import subprocess
+import uuid
 
 from typing import List
 
-from src.tools.models import Schema, TerminalColors, Parser, PermissionsLevel
-from src.tools.settings import TTP
+from src.tools.models import Schema, Parser, PermissionsLevel
+from src.tools.settings import BASE_DIR
 
 
 class TechniqueNode:
     output: list = []
     __burn: bool = False  # use this variable to know if the technique has been used already.
 
-    def __init__(self, technique: object, callbacks, level, ):
+    def __init__(self, technique: object, level):
         # private vars
         self.__technique = technique
-        self.__callbacks = callbacks
 
         self.level, self.skill_level = level
 
-        # attrs
+        # required attrs
         # TODO load this as a dictionary of **kwargs
         self.name = technique['name']
         self.technique = technique['technique']
         self.commands_ = technique['commands']  # commands is a python keyword, careful!
         self.payload = technique['payload']
-        self.options = technique['options'] if technique['options'] else []
         self.parser = technique['parser']
-        self.weight = technique['weight'] if technique['weight'] else 100
+
+        # optional attrs
+        self.options = technique['options'] if 'options' in technique else []
+        self.weight = technique['weight'] if 'weight' in technique else 100
+        self.requires = technique['requires'] if "requires" in technique else {}  # list of loot requirements
 
     @property
     def commands_(self):
@@ -80,14 +84,6 @@ class TechniqueNode:
     def __str__(self):
         return self.name
 
-    def __notify(self, loot):
-        callback = self.__callbacks["notify"]
-        callback(loot)
-
-    def _run(self):
-        callback = self.__callbacks["run"]
-        callback(self)
-
     # Public method to use the technique
     def use(self, output):
         self.burn()
@@ -98,9 +94,8 @@ class TechniqueNode:
 
         # if there is a parser in place, parse the output to collect the loot
         if self.parser:
-            loot = self.parser.maraud(output.stdout.decode("utf-8"))
-            # Notify the artifact of the loot collected during the run
-            self.__notify(loot)
+            loot = self.parser.maraud(output)
+            return loot
 
     def is_burnt(self):
         return self.__burn
@@ -122,7 +117,6 @@ class TacticNode:
     def get_techniques(self):
         def order_techniques(techniques: List[TechniqueNode]):
             # return the list of techniques in descending order based on the weight of the technique
-            # TODO add weights to the TechniqueNode
             return sorted(techniques, key=lambda x: x.weight, reverse=True)
 
         ordered_ = order_techniques(self.techniques)
@@ -142,22 +136,15 @@ class TacticNode:
 
 
 class ArtifactNode:
-    __loot: object = {}  # contains relevant information related to the artifact leaf nodes.
-
     tactics: List[TacticNode] = []  # tactics the artifact has access to.
-    targets: list = []
-    success: bool = False  # whether this artifact is done or not with a successful result
 
-    def __init__(self, name, flag: hash):
+    def __init__(self, name):
         self.name = name
-        self.path = os.path.join(TTP, name)
-        self.flag = flag  # hash of the objective
 
     def add_tactic(self, tactic: TacticNode):
         self.tactics.append(tactic)
 
     def get_technique(self, name):
-
         # find the technique given the name
         for tactic in self.tactics:
             techniques = tactic.techniques
@@ -165,77 +152,9 @@ class ArtifactNode:
                 if str(technique) == name:
                     return technique
 
-    def run_technique(self, technique, verbose: bool = False):
-
-        # check if the technique given is a string or
-        technique_type = type(technique)
-        if technique_type == str:
-            technique = self.get_technique(technique)
-        elif technique_type is not TechniqueNode:
-            raise TypeError("Type of technique not accepted")
-
-        def build_arguments(**kwargs):
-            args = []
-            for arg in kwargs.values():
-                arg = filter(lambda x: x is not None, arg)
-                if arg:
-                    args += arg
-
-            return args
-
-        # find the payloads
-        payload = [os.path.join(self.path, technique.payload)]
-
-        # combination of arguments, commands, options and targets.
-        arguments = build_arguments(commands=technique.commands_, options=technique.options, targets=self.targets)
-
-        # try to give access to the current payload to be run first
-        # in case this does not work, try with 744 mode
-        chmod_args = ['chmod', '+x'] + payload
-        subprocess.run(chmod_args, capture_output=True)
-
-        # run the payload with the given commands
-        output = subprocess.run(payload + arguments, capture_output=True)
-
-        # if you need to debug, add the verbose. This will print in the console the processes.
-        # these strings are formatted into bytecode, therefore they should be decoded first.
-        if verbose:
-            print(
-                output.stdout.decode("utf-8"),
-                TerminalColors.WARNING + output.stderr.decode("utf-8") + TerminalColors.END,
-            )
-
-        # burns the technique so it is marked as used
-        technique.use(output)
-
-        return output
-
-    def add_loot(self, loot):
-        self.__loot.update(loot)
-
-        # compare the loot flag to the actual flag
-        flags = loot['flag']
-
-        for flag in flags:
-            self.check_flag(flag)
-
-            if self.success:
-                return flag
-
-    def get_loot(self):
-        return self.__loot
-
-    def check_flag(self, flag):
-        # compare the flag passed to the flag set for the artifact
-        check = hash(flag) == self.flag
-
-        if check:
-            self.success = True
-
-        return flag
-
-    def set_targets(self, targets: list):
-        self.targets = targets
+    def get_all_techniques(self):
+        techniques = [technique for tactic in self.tactics for technique in tactic.techniques]
+        return techniques
 
     def __hash__(self):
         return hash(self.name)
@@ -244,6 +163,238 @@ class ArtifactNode:
         if not isinstance(other, ArtifactNode):
             return NotImplemented
         return self.name == other.name
+
+
+class Worker:
+    """ This class is meant to run techniques """
+    def __init__(self, target, technique, loot, cb):
+        self.id = uuid.uuid4()
+        self.target = target
+        self.technique = technique
+        self.loot = loot
+        self.callback = cb
+        self.payload = os.path.join(BASE_DIR, "tools", "payloads", self.technique.payload)
+
+        # include the target into the loot if there isn't yet
+        if not self.loot.target:
+            self.loot.target = self.target
+
+    @staticmethod
+    def _build_arguments(**kwargs) -> list:
+        """ remove empty, None arguments """
+        args = []
+        for arg in kwargs.values():
+            arg = filter(lambda x: x is not None, arg)
+            if arg:
+                args += arg
+
+        return args
+
+    @staticmethod
+    def _map_commands(args: list, loot):
+
+        regex = "\#{(\w+)}.*?"
+        pattern = re.compile(regex)
+
+        for i, el in enumerate(args):
+            match = pattern.findall(el)
+
+            for group in match:
+                # lower case the group and replace the string with the value from the item in the string.
+                replacement = getattr(loot, group.lower())
+                el = el.replace(
+                    f'#{{{group}}}', replacement
+                )
+
+            args[i] = el
+        return args
+
+    @property
+    def technique(self):
+        return self._technique
+
+    @technique.setter
+    def technique(self, technique):
+        technique_type = type(technique)
+        if technique_type == str:
+            technique = self.callback(technique)
+        elif technique_type is not TechniqueNode:
+            raise TypeError("Type of technique not accepted")
+
+        self._technique = technique
+
+    def grant_payload_access(self):
+        # try to give access to the current payload to be run first
+        # in case this does not work, try with 744 mode
+        chmod_args = ['chmod', '+x', self.payload]
+        subprocess.run(chmod_args, capture_output=True)
+
+    def run(self):
+
+        commands = self._build_arguments(
+            commands=self.technique.commands_,
+            options=self.technique.options
+        )
+
+        commands = self._map_commands(commands, self.loot)
+
+        # run the payload with the given commands
+        process = subprocess.Popen(
+            [self.payload] + commands,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+        stdout = process.communicate()[0]
+
+        """
+        # NOTE: This works best with metasploit
+        stdout = []
+        stderr = []
+
+        print(f"[!] Worker for {self.technique.name} running... {commands}")
+
+        while process.poll() is None:
+            output = process.stdout.readline()
+
+            if output != "":
+                stdout.append(output)
+                print(output)
+
+            err = process.stderr.readline()
+            if err != "":
+                stderr.append(err)
+                print(err)
+
+        print(f"[!] Worker for {self.technique.name} finished")
+        """
+
+        # get the loot gathered by the technique after running.
+        targets, loot = self.technique.use(stdout)
+
+        # update the current loot bag with the data found in it
+        self.loot.add_to_loot(**loot)
+
+        return targets
+
+
+class Loot:
+    """ This class is meant to define the loot gathered from the technique used """
+
+    # make this private and only accessible by the class itself, so we cannot temper with it
+    __loot = {
+        "ip": [],
+        "email": [],
+        "filename": [],
+        "port": [],
+        "target": [],
+        "flags": []
+    }
+
+    flagged: bool = False
+
+    def __init__(self, target, port=None, treasure_cb=None):
+        self.target = target  # this should be an IP, service or a container name
+        self.port = port
+        self._treasure_cb = treasure_cb
+
+    @property
+    def target(self):
+        return self._target
+
+    @target.setter
+    def target(self, t):
+        self.add_to_loot(ip=t)
+        self._target = t
+
+    @property
+    def port(self):
+        return self._port
+
+    @port.setter
+    def port(self, p):
+        if p:
+            self.add_to_loot(port=p)
+            self._port = p
+
+    def flag(self):
+        self.flagged = True
+
+    def collect(self, attr):
+        try:
+            return getattr(self, attr)
+        except:
+            return self.__loot.get(attr)
+
+    def add_to_loot(self, **kwargs):
+        # attempt to include the newly found loot into the loot itself
+        for k, val in kwargs.items():
+            if type(val) != list:
+                val = [val]
+
+            if k in self.__loot:
+                self.__loot[k] += val
+            else:
+                self.__loot[k] = val
+
+    def get_loot(self):
+        return self.__loot
+
+    def is_potential_target(self, **kwargs):
+        """ run a comparison between the content of the loot to the given arguments """
+        for k, val in kwargs.items():
+            if val not in self.__loot[k]:
+                return False
+
+        return True
+
+    def scatter_treasure(self, attr):
+        """
+        NOTE: not implemented!
+        This is meant to investigate the treasure in which this loot is for a specific item, i.e. all the IP's logged.
+        """
+        if self._treasure_cb:
+            return self._treasure_cb(attr)
+
+
+class Treasure:
+    """ Collect all the loot from the whole scenario here"""
+
+    def __init__(self, loot: Loot = None):
+        self.loot = loot
+
+    @property
+    def loot(self):
+        return self._loot
+
+    @loot.setter
+    def loot(self, l_):
+        self._loot = [l_] if l_ else []
+
+    def add_loot(self, loot: Loot):
+        self.loot.append(loot)
+
+    def scatter(self, attr):
+        """ returns a flat array containing all the elements inside each loot item """
+        return [e for loot in self.loot for e in loot.collect(attr)]
+
+    def find_potential_target(self, req):
+        return [loot for loot in self.loot if loot.is_potential_target(**req)]
+
+    def create_loot(self, target_list: List[dict]):
+        # create a new loot bags from the objects given
+        # the list will contain information relevant to each target
+        for target in target_list:
+            try:
+                # create the new loot bag
+                loot = Loot(target.get("target"), target.get("port"))
+                # add the extra information in regards to it
+                if "extra" in target:
+                    loot.add_to_loot(**target["extra"])
+                self.add_loot(loot)
+            except:
+                pass
 
 
 class Campaign:
@@ -255,77 +406,89 @@ class Campaign:
     __nodes: List[ArtifactNode] = []
     __built: bool = False
 
-    def __init__(self, techniques, flags: object):
-        self.__schema = Schema(techniques)
-        self.abilities = self.__schema.abilities
-        self.flags: object = flags
+    def __init__(self, plan):
+        self.plan_ = plan
 
-    def get_abilities_intersection(self, abilities):
+    @property
+    def plan_(self):
+        return self._plan
 
-        ttp = []
-        s_ab = dict(self.__schema.abilities)
+    @plan_.setter
+    def plan_(self, plan):
+        self._plan = plan
+        self.preconditions = plan["preconditions"]
+        self.schema = Schema(plan["schema"])
+        self.flags = self.schema.flags
 
-        for ability in abilities:
-            _ = []
-            cat, cat_abs = ability
 
-            if cat in s_ab.keys():
-                abs_list = [x for x in s_ab[cat] if x in cat_abs]
-                ttp.append((cat, abs_list))
+class AdversaryTree:
+    """ A tree containing the nodes and leaves """
+    _nodes: List[ArtifactNode] = []
 
-        return ttp
+    def __init__(
+            self,
+            campaign_schema: Schema,
+            adversary_schema: Schema,
+            level=PermissionsLevel.NOOB,
+            auto: bool = True):
 
-    def get_adversary_tree(self, adversary_schema: Schema, weights: object, adversary_level: str = "NOOB"):
-        """ Based on an adversary schema, build the tree """
+        self.c_schema = campaign_schema
+        self.a_schema = adversary_schema
+        self.level = level
 
-        # load the difficulty level
-        level = getattr(PermissionsLevel, adversary_level)
+        if auto:
+            # load the intersection of abilities between the campaign and the adversary
+            abilities = self.get_abilities_intersection(
+                self.c_schema.abilities,
+                self.a_schema.abilities
+            )
 
-        # get the intersection between the campaign abilities and the adversary abilities, and rebuild the tree.
-        # since we are setting the abilities in the campaign as well, we do not need to given them to the
-        # builder, as it will grab them from the local scope.
-        self.abilities = self.get_abilities_intersection(adversary_schema.abilities)
-        self.abilities = Schema.add_weights(self.abilities, weights)
+            # add the weights to the abilities from the adversary schema
+            abilities = Schema.add_weights(abilities, self.a_schema)
 
-        tree = self.build(level=level)
-
-        return tree
+            # build the tree
+            self.build(abilities, level)
 
     def get_tree(self):
-        if self.__built:
-            return self.__nodes
+        return self._nodes
 
-    def build(self, flags: object = None, abilities=None, level=PermissionsLevel.NOOB):
-        """ Build the nodes tree based on the given abilities """
+    @staticmethod
+    def get_abilities_intersection(c_abilities, a_abilities):
+        abilities = []
+
+        c_abilities = dict(c_abilities)
+        a_abilities = dict(a_abilities)
+
+        for c_category, c_category_abilities in c_abilities.items():
+
+            if c_category in a_abilities.keys():
+                intersection = [x for x in a_abilities[c_category] if x in c_category_abilities]
+                abilities.append((c_category, intersection))
+
+        return abilities
+
+    def build(self, abilities, level):
         def sort_abilities(abs_list):
             """ Sort the techniques from the abilities object """
-            t_ = {}
+            tac_ = {}
 
             for ab in abs_list:
                 cur_tac = ab['tactic']
-                if cur_tac in t_:
-                    t_[cur_tac].append(ab)
+                if cur_tac in tac_:
+                    tac_[cur_tac].append(ab)
                 else:
-                    t_[cur_tac] = [ab]
+                    tac_[cur_tac] = [ab]
 
-            return t_
+            return tac_
 
         nodes = []
-        flags = flags if flags else self.flags
-        abilities = abilities if abilities else self.abilities
 
-        # create and append all the nodes to the tree list.
         for node in abilities:
             # each node in the schema is divided into the category and the abilities in it.
             category, abilities = node
-            flag = flags[category]
 
-            category = ArtifactNode(category, flag)
+            category = ArtifactNode(category)
             tactics = sort_abilities(abilities)
-            callbacks = {
-                "run": category.run_technique,
-                "notify": category.add_loot
-            }
 
             # create a tactic node and iterate through the techniques
             for tactic, techniques in tactics.items():
@@ -333,14 +496,85 @@ class Campaign:
 
                 # create technique nodes and add them to the tactic
                 for technique in techniques:
-                    t_ = TechniqueNode(technique=technique, callbacks=callbacks, level=level)
+                    t_ = TechniqueNode(technique=technique, level=level)
                     tactic.add_technique(t_)
 
                 category.add_tactic(tactic)
-
             nodes.append(category)
 
-        self.__built = True
-        self.__nodes = nodes
+        self._nodes = nodes
+        return self._nodes
 
-        return self.__nodes
+
+class Logic:
+    local_network: str = "192.168.0.0/24"
+
+    @staticmethod
+    def build_preconditions_treasure(preconditions: dict = None):
+        # create a treasure which will be shared through the whole logic and initialize it with some
+        # loot from the scenario or local network loot!
+        treasure = Treasure()
+
+        if preconditions:
+            # if there is a preconditions object, create some loot around it
+            pre_target = preconditions.get("target")
+            pre_port = preconditions.get("port")
+            extra = preconditions.get("extra")
+
+            pre_loot = Loot(target=pre_target, port=pre_port, treasure_cb=treasure.scatter)
+
+            if extra:
+                pre_loot.add_to_loot(**extra)
+        else:
+            pre_loot = Loot(target=Logic.local_network, treasure_cb=treasure.scatter)
+
+        treasure.add_loot(pre_loot)
+        return treasure
+
+    @staticmethod
+    def treasure_hunter(tree, flags, preconditions: dict = None, iterations: int = 1):
+
+        # build the treasure
+        treasure = Logic.build_preconditions_treasure(preconditions)
+
+        # iterate through the nodes in vertical fashion
+        for node in tree:
+            # initialize the flag and set the success of the node to False, so we can start running techniques
+            # until the flag is found
+            success: bool = False
+            flag = flags.get(node.name)
+
+            # collect all the techniques available in one simple array
+            techniques = node.get_all_techniques()
+
+            while iterations > 0 and not success:
+                # reduce the number of iterations left
+                iterations -= 1
+
+                # iterate through the techniques, and run them with the targets.
+                # remember the techniques are sorted by weight, therefore the "heavier" ones will run first!
+                for technique in techniques:
+                    loots = treasure.find_potential_target(technique.requires)
+
+                    # iterate through the loot and run the technique as many times as potential loot allows
+                    for loot in loots:
+                        # running a worker will make use of the technique and burn it
+                        # it will also generate new loot, which should be added to the treasure
+                        worker = Worker(
+                            technique=technique,
+                            target=loot.target,
+                            loot=loot,
+                            cb=node.get_technique
+                        )
+
+                        new_targets = worker.run()
+
+                        treasure.create_loot(new_targets)
+
+                        # once the worker is done, check the flags gathered in the loot,
+                        # play them against the current flag, and mark the loot box as a good one.
+                        for loot_flag in loot.collect("flags"):
+                            if flag == loot_flag:
+                                success = True
+                                print(f"[SUCCESS] category: {node.name} > technique: {technique.name} > target: {loot.target}")
+                                break

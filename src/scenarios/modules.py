@@ -1,19 +1,27 @@
 import yaml
 import os
 
-from src.campaigns.models import Campaign
+from src.campaigns.models import Campaign, Logic, AdversaryTree
 from src.adversaries.models import Adversary
-from src.tools.settings import ADVERSARY, CAMPAIGN, NETWORKS,BASE_DIR
+from src.tools.settings import ADVERSARY, CAMPAIGN, BASE_DIR
 
 
 class Planner:
-    def __init__(self, campaign_plan=CAMPAIGN, adversary_profile=ADVERSARY):
+    def __init__(self, campaign_plan=CAMPAIGN, adversary_profile=ADVERSARY, auto=True):
 
         # build the campaign and the adversary
         self.campaign = campaign_plan
         self.adversary = adversary_profile
 
-        self.tree, self.logic = self.adversary.build_adversary(self.campaign)
+        self.tree = AdversaryTree(
+            self.campaign.schema,
+            self.adversary.schema
+        ).get_tree()
+
+        self.logic = getattr(Logic, self.adversary.logic)
+
+        if auto:
+            self.run(self.tree, self.logic, self.campaign.preconditions, self.campaign.flags)
 
     @property
     def campaign(self):
@@ -26,7 +34,7 @@ class Planner:
 
         with open(path, 'r') as data:
             data_loaded = yaml.safe_load(data)
-            self._campaign = Campaign(techniques=data_loaded['techniques'], flags=data_loaded['flags'])
+            self._campaign = Campaign(plan=data_loaded)
 
     @property
     def adversary(self):
@@ -39,7 +47,8 @@ class Planner:
 
         with open(path, 'r') as data:
             data_loaded = yaml.safe_load(data)
-            self._adversary = Adversary(profile=data_loaded, networks=NETWORKS)
+            self._adversary = Adversary(profile=data_loaded)
 
-
-
+    @staticmethod
+    def run(tree, logic, preconditions, flags):
+        logic(tree, flags, preconditions)
