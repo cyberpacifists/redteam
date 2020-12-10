@@ -88,6 +88,20 @@ class MsfRpcWorker(Worker):
         if wait:
             self.wait_console(timeout)
 
+    def execute_module(self, module_name, parameters, wait=True, timeout=None):
+        commands = [
+            f'use {module_name}'
+        ]
+        for key, value in parameters.items():
+            if not key.startswith('_'):
+                commands.append(f'set {key} {value}')
+        commands.append('run -z')
+        self.execute(
+            '\n'.join(commands),
+            wait=wait,
+            timeout=timeout
+        )
+
     def wait_console(self, timeout):
         """Waits until console command has finished
         """
