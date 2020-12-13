@@ -12,7 +12,7 @@ schema:
     flag: 10.5.0.6
     techniques: all
   exploitation:
-    flag: 1
+    flag: Meterpreter session
     techniques: all
   post:
     flag: mysql://root:root@wordpress-mysql:3306/wordpress
