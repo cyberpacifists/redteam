@@ -40,18 +40,24 @@ services:
   msf:
     image: metasploitframework/metasploit-framework
     tty: true
+    stdin_open: true
     privileged: true
     ports:
       - 55553:55553
     # This command included: -S
-    #./msfconsole -r docker/msfconsole.rc -y $APP_HOME/config/database.yml -x load msgrpc ServerHost=0.0.0.0 ServerPort=55553 User=username Pass=password exit
-    command: ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
+    # ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
+    command:
+      - ./msfconsole
+      - -r
+      - docker/msfconsole.rc
+      - -y
+      - $APP_HOME/config/database.yml
+      - -x
+      - load msgrpc ServerHost=$$MSFRPC_HOST ServerPort=$$MSFRPC_PORT User=$$MSFRPC_USER Pass=$$MSFRPC_PASSWORD
     volumes:
       - ./src/data/msf:/home/msf/.msf4/
     env_file:
       - env/.env.msf
-    environment:
-      LHOST: 10.5.0.7
     networks:
       - adversary
       - defenders
