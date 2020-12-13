@@ -8,8 +8,8 @@
   parser: nmap.yml
   payload: scanner.sh
   commands:
-    - "-sC -T4"
-    - "-O"
+    - "-sC -T4 "
+    - "-sV"
     - "-A"
     - "-n"
   options:

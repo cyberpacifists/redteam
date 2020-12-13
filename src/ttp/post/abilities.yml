@@ -9,6 +9,8 @@
   parser:
     flag: (?:Storing Wordpress database credentials:) (mysql:\/\/root:root@wordpress-mysql:3306\/wordpress)
   payload: msf.py
+  requires:
+    session:
   commands:
     - "use post/linux/gather/enum_wordpress"
   options:

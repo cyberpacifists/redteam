@@ -263,28 +263,41 @@ class Parser:
         # load the content of the parser plan into the variable
         plan = Parser.load_plan(parser)
 
-        self.mapping = plan['mapping'] if "mapping" in plan else {}
         self.flag = plan['flag']
-        self.miners: object = plan['miners'] if "miners" in plan else None
-        self.target: object = plan['target'] if "target" in plan else None
+        self.miners = plan['miners'] if "miners" in plan else None
+        self.target: dict = plan['target'] if "target" in plan else None
+
+        # Other non implemented features
+        # self.mapping: dict = plan['mapping'] if "mapping" in plan else None
 
     def maraud(self, output):
         """ Look for loot based on the given expressions and the pre-defined ones """
-
-        # TODO take a look at the parser
-        # output = '\n'.join(output)
+        self.loot["flags"] = self.search_match(self.flag, output)
 
         self.loot["ip"] = self.ip(output)
         self.loot["email"] = self.email(output)
         self.loot["filename"] = self.filename(output)
 
         if self.miners:
-            for key, match in self.miners.items():
-                self.loot[key] = self.search_match(match, output)
+            if type(self.miners) == str:
+                # if the miner is a string, that means that it is a pattern with named groups
+                miners = self.named_search(self.miners, output)
 
-        self.loot["flags"] = self.search_match(self.flag, output)
+                # combine the current state of the loot with all the values found from the miners
+                for miner in miners:
+                    for key, match in miner.items():
+                        self.loot[key] = self.loot[key] + [match] if key in self.loot else [match]
 
-        targets = self.search_match(self.target, output) if self.target else []
+            else:
+                # we understand that the miner could be either a string or a dictionary
+                for key, match in self.miners.items():
+                    self.loot[key] = self.search_match(match, output)
+
+        # targets = self.search_match(self.target, output) if self.target else []
+        targets = []
+        if self.target:
+            if "<" in self.target and ">" in self.target:
+                targets = self.named_search(self.target, output)
 
         return targets, self.loot
 
@@ -304,6 +317,15 @@ class Parser:
 
         else:
             raise TypeError
+
+    @staticmethod
+    def named_search(match, blob) -> list:
+        try:
+            matches = re.finditer(match, blob, re.MULTILINE)
+            return [match.groupdict() for match in matches]
+
+        except Exception as e:
+            print(e)
 
     @staticmethod
     def search_match(match, blob):
@@ -615,16 +637,6 @@ class Worker:
 
         # Use communicate to avoid deadlocks on the pipe buffer
         stdout, stderr = self.capture(process)
-        """
-
-        stdout = subprocess.check_output([self.payload] + commands,
-                                         stderr=subprocess.PIPE,
-                                         timeout=self.technique.timeout,
-                                         universal_newlines=True,
-
-                                         )
-        stderr = ""
-        """
 
         # get the loot gathered by the technique after running.
         targets, loot = self.technique.use(stdout)
@@ -653,10 +665,20 @@ class Loot:
 
     flagged: bool = False
 
-    def __init__(self, target, port=None, treasure_cb=None):
+    def __init__(self, target, port=None, session=None, treasure_cb=None):
         self.target = target  # this should be an IP, service or a container name
         self.port = port
+        self.session = session
         self._treasure_cb = treasure_cb
+
+    @property
+    def session(self):
+        return self._session
+
+    @session.setter
+    def session(self, s):
+        self.add_to_loot(session=s)
+        self._session = s
 
     @property
     def target(self):
@@ -677,35 +699,57 @@ class Loot:
             self.add_to_loot(port=p)
             self._port = p
 
+    def update(self, target, port, session, **kwargs):
+        self.target = target
+        self.port = port
+        self.session = session
+
+        self.add_to_loot(**kwargs)
+
     def flag(self):
         self.flagged = True
 
     def collect(self, attr):
         try:
-            return getattr(self, attr)
+            item = getattr(self, attr)
+
+            # check if the attribute does have any value
+            if item is not None:
+                return item
+            else:
+                return self.__loot.get(attr)
+
         except:
             return self.__loot.get(attr)
 
     def add_to_loot(self, **kwargs):
         # attempt to include the newly found loot into the loot itself
         for k, val in kwargs.items():
-            if type(val) != list:
-                val = [val]
+            if val and val is not None:
+                if type(val) != list:
+                    val = [val]
 
-            if k in self.__loot:
-                self.__loot[k] += val
-            else:
-                self.__loot[k] = val
+                if k in self.__loot:
+                    self.__loot[k] += val
+                else:
+                    self.__loot[k] = val
+
+                self.__loot[k] = list(set(self.__loot[k]))
 
     def get_loot(self):
         return self.__loot
 
     def is_potential_target(self, **kwargs):
         """ run a comparison between the content of the loot to the given arguments """
-        for k, val in kwargs.items():
-            if k not in self.__loot or val not in self.__loot[k]:
-                return False
 
+        for k, val in kwargs.items():
+            if k not in self.__loot:
+                return False
+            if val:
+                val = str(val)
+                # it might be the case that there is no value at all, which will be considered then as "any"
+                if val not in self.__loot[k]:
+                    return False
         return True
 
     def scatter_treasure(self, attr):
@@ -731,6 +775,9 @@ class Treasure:
     def loot(self, l_):
         self._loot = [l_] if l_ else []
 
+    def count(self):
+        return len(self._loot)
+
     def add_loot(self, loot: Loot):
         self.loot.append(loot)
 
@@ -747,11 +794,13 @@ class Treasure:
         for target in target_list:
             try:
                 # create the new loot bag
-                loot = Loot(target.get("target"), target.get("port"))
-                # add the extra information in regards to it
-                if "extra" in target:
-                    loot.add_to_loot(**target["extra"])
-                self.add_loot(loot)
+                loot = list(filter(lambda x: x.target == target.get("target"), self.loot))
+                if loot:
+                    loot[0].update(**target)
+                else:
+                    loot = Loot(target.get("target"), port=target.get("port"))
+                    loot.add_to_loot(**target)
+                    self.add_loot(loot)
             except:
                 pass
 
@@ -889,7 +938,11 @@ class Logic:
                 # iterate through the techniques, and run them with the targets.
                 # remember the techniques are sorted by weight, therefore the "heavier" ones will run first!
                 for technique in techniques:
-                    print(technique.name)
+                    # for debugging purposes, print the current status.
+                    print(
+                        TerminalColors.WARNING + str(technique) + "\n",
+                        f"Loot: {treasure.count()}" + TerminalColors.END)
+
                     loots = treasure.find_potential_target(technique.requires)
 
                     # iterate through the loot and run the technique as many times as potential loot allows
@@ -917,8 +970,8 @@ class Logic:
                                       f"> target: {loot.target}"
                                       )
 
-                                # TODO perhaps change this closing break, as it continues
-                                #  doing stuff even after finishing.
                                 break
+                        if success:
+                            break
 
         print("Game Done")

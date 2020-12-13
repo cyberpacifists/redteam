@@ -1,7 +1,6 @@
 ---
-
+# this nmap parser comes with the limitation that only captures the first group of
+# services open on a port
 flag: \b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b
-miners:
-  # check for open ports
-  port: "{0,9}/open/"
-mapping:
+miners: ((?P<port>\d{1,5})\/(?P<proto>tcp|udp)\s+(?P<status>open|closed)\s+(?P<protocol>\w+)?\n)
+target: Nmap scan report for\s+(?P<device>.+)\s+\((?P<target>\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b)\)\r?\n(?:.+\r?\n){1,3}((?P<port>\d{1,5})\/(?P<proto>tcp|udp)\s+(?P<status>open|closed)\s+(?P<protocol>\w+))

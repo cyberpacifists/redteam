@@ -1,12 +1,12 @@
 ---
+
 description: |
   This campaign focuses on a faulty version of wordpress.
   The wordpress server needs to be installed and running!
+
+  This campaign does not contain any precondition, as it
+  is meant for demonstration purposses
 adversary: hacker
-#preconditions:
- # target: 10.5.0.3
-  #extra:
-   # ip: 10.5.0.3
 schema:
   reconnaissance:
     flag: 10.5.0.6
