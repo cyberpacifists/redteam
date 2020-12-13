@@ -1,10 +1,19 @@
 ---
+description: |
+  This campaign focuses on a faulty version of wordpress.
+  The wordpress server needs to be installed and running!
 adversary: hacker
-preconditions:
-  target: 192.168.0.29
-  extra:
-    ip: 192.0.0.0
+#preconditions:
+ # target: 10.5.0.3
+  #extra:
+   # ip: 10.5.0.3
 schema:
   reconnaissance:
-    flag: 192.168.0.29
+    flag: 10.5.0.6
+    techniques: all
+  exploitation:
+    flag: 1
+    techniques: all
+  post:
+    flag: mysql://root:root@wordpress-mysql:3306/wordpress
     techniques: all

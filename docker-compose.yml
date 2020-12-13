@@ -20,10 +20,13 @@ services:
     depends_on:
       - postgres
 
+    volumes:
+      - ./src/tools/logs:/usr/src/app/tools/logs
+
     networks:
       - adversary
-      - default
-      #- master
+      - defenders
+      - master
 
   postgres:
     image: postgres:latest
@@ -36,17 +39,23 @@ services:
 
   msf:
     image: metasploitframework/metasploit-framework
+    tty: true
+    privileged: true
     ports:
       - 55553:55553
     # This command included: -S
+    #./msfconsole -r docker/msfconsole.rc -y $APP_HOME/config/database.yml -x load msgrpc ServerHost=0.0.0.0 ServerPort=55553 User=username Pass=password exit
     command: ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
     volumes:
       - ./src/data/msf:/home/msf/.msf4/
     env_file:
       - env/.env.msf
+    environment:
+      LHOST: 10.5.0.7
     networks:
       - adversary
-      - default
+      - defenders
+
 
 volumes:
   postgres_data:
@@ -59,7 +68,12 @@ networks:
     name: adversary
     # driver: bridge
   #--------------#
-  #master:
+  # defenders external network containing the targets
+  defenders:
+    external:
+      name: defenders
+  #--------------#
+  master:
     # Use this network to communicate/send messages between the adversary and the game-master through the Bus
-    #external:
-      #name: master
+    external:
+      name: master

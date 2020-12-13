@@ -78,7 +78,7 @@ class Campaign:
     @plan_.setter
     def plan_(self, plan):
         self._plan = plan
-        self.preconditions = plan["preconditions"]
+        self.preconditions = plan["preconditions"] if "preconditions" in plan else None
         self.schema = Schema(plan["schema"])
         self.flags = self.schema.flags
 

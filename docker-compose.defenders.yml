@@ -16,6 +16,9 @@ services:
       start_period: "10"
     networks:
       - defenders
+      # this is just for debugging
+      # TODO remove this access
+      - master
 
   target2:
     image: hmlio/vaas-cve-2014-6271 # shellshock
@@ -44,16 +47,9 @@ services:
      - WORDPRESS_DB_NAME=wordpress
     ports:
      - "8080:80"
-    links:
-      - wordpress-mysql
-    # unix/webapp/wp_phpmailer_host_header
-    # set RHOSTS wordpress
-    # cat /var/www/html/wp-config.php
-    # fail: execute -f /bin/grep -a DB_PASSWORD /var/www/html/wp-config.php
 
     networks:
       - defenders
-
 
   wordpress-mysql:
     image: mysql:5
@@ -63,10 +59,20 @@ services:
       - defenders
 
 networks:
+  # use this network to define the targets that will be in the network
   defenders:
     name: defenders
+    # this network connects all the devices together
     driver: bridge
-      ipam:
-        config:
-            - subnet: 10.5.0.0/16
-              gateway: 10.5.0.1
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+
+  master:
+    name: master
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.6.0.0/16
+          gateway: 10.6.0.1

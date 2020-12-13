@@ -8,21 +8,22 @@
   parser: nmap.yml
   payload: scanner.sh
   commands:
-    - "-T4 --verbose"
+    - "-sC -T4"
+    - "-O"
+    - "-A"
+    - "-n"
   options:
     - "#{TARGET}"
 
-
 - id: 2
   name: MSF SYN Network Service Scanning
-  description: Scan using SYN on eth0
+  description: Scan using MSF SYN
   tactic: technical-information-gathering
   technique: syn-network-scanning
   parser: msf.yml
   payload: msf.py
   commands:
     - "use auxiliary/scanner/portscan/syn"
-    - "set INTERFACE eth0"
     - "set THREADS 50"
   options:
     - "set RHOSTS #{TARGET}"

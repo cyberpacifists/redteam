@@ -28,6 +28,12 @@ schema:
   reconnaissance:
     techniques:
       1: 50
-objective: drop-dbs
+  exploitation:
+    techniques:
+      4: 100
+  post:
+    techniques:
+      5: 100
+objective: download-db
 level: NOOB
 logic: treasure_hunter
