@@ -580,7 +580,10 @@ class Worker:
 
         return stdout, stderr
 
-    def write(self, stdout, commands, loot=None, stderr=None, verbose=True, errs: bool = False):
+    def write(self, stdout, commands, loot=None, stderr=None, verbose=True,
+              log_errs: bool = False,
+              log_loot: bool = False):
+
         # declare at which time this worker was run
         date_now = f"{datetime.now()}\n"
 
@@ -594,10 +597,10 @@ class Worker:
         end = f"\n{info} Worker for {self.technique.name} finished\n"
 
         data = date_now + start + stdout
-        if stderr and errs:
+        if stderr and log_errs:
             data += err + stderr
 
-        if loot:
+        if loot and log_loot:
             data += warning + json.dumps(loot, indent=2)
 
         # add the ending to the data
