@@ -47,15 +47,15 @@ services:
     # This command included: -S
     #./msfconsole -r docker/msfconsole.rc -y $APP_HOME/config/database.yml -x load msgrpc ServerHost=0.0.0.0 ServerPort=55553 User=username Pass=password exit
     # ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
-    command: ./msfrpcd -a 0.0.0.0 -p 55553 -U username -P password -f
+    command: ./msfrpcd -a ${MSFRPC_HOST-0.0.0.0} -p ${MSFRPC_PORT-55553} -U ${MSFRPC_USER-username} -P ${MSFRPC_PASSWORD-password} -f
     volumes:
       - ./src/data/msf:/home/msf/.msf4/
     env_file:
       - env/.env.msf
     networks:
-      - adversary
-      - defenders
-
+      defenders:
+        ipv4_address: 10.5.0.7
+      adversary:
 
 volumes:
   postgres_data:
