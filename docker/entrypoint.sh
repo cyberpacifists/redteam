@@ -11,6 +11,11 @@ then
   echo "PostgreSQL started"
 fi
 
+# sleep for 10 seconds to give time to metasploit container to run
+echo "Giving 10s metasploit to start..."
+sleep 10
+echo "Starting!"
+
 python -m planner
 
 exec "$@"

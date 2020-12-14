@@ -25,6 +25,7 @@ from datetime import datetime
 
 
 class TerminalColors:
+    OK = '\u001b[32m'
     WARNING = '\033[93m'
     END = '\033[0m'
 
@@ -161,7 +162,6 @@ class Loader:
 
 class Schema:
     """ Generate a list of procedures and tree pathing steps """
-    tree: list = []
 
     def __init__(self, schema: object, attr="id"):
         self.__schema = schema
@@ -169,6 +169,7 @@ class Schema:
         self.abilities = self.__schema
         self.weights = self.__schema
         self.flags = self.__schema
+        self.tree: list = []
 
     @property
     def flags(self):
@@ -256,7 +257,6 @@ class Schema:
 
 class Parser:
     """ Generic parser to find all kinds of loot information """
-    loot: object = {}
 
     def __init__(self, parser):
 
@@ -266,6 +266,7 @@ class Parser:
         self.flag = plan['flag']
         self.miners = plan['miners'] if "miners" in plan else None
         self.target: dict = plan['target'] if "target" in plan else None
+        self.loot: object = {}
 
         # Other non implemented features
         # self.mapping: dict = plan['mapping'] if "mapping" in plan else None
@@ -349,13 +350,13 @@ class Parser:
 
 
 class TechniqueNode:
-    output: list = []
-    __burn: bool = False  # use this variable to know if the technique has been used already.
 
     def __init__(self, technique: object, level):
         # private vars
         self.__technique = technique
+        self.__burn: bool = False  # use this variable to know if the technique has been used already.
 
+        self.output: list = []
         self.level, self.skill_level = level
 
         # required attrs
@@ -399,6 +400,14 @@ class TechniqueNode:
     def __str__(self):
         return self.name
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if not isinstance(other, TechniqueNode):
+            return NotImplemented
+        return self.name == other.name
+
     # Public method to use the technique
     def use(self, output):
         self.burn()
@@ -420,11 +429,11 @@ class TechniqueNode:
 
 
 class TacticNode:
-    techniques: List[TechniqueNode] = []  # techniques the tactic knows.
 
     def __init__(self, name):
         # load the tactic from the yaml file passed to it
         self.name = name
+        self.techniques: List[TechniqueNode] = []  # techniques the tactic knows.
 
     def add_technique(self, technique: TechniqueNode):
         self.techniques.append(technique)
@@ -436,7 +445,7 @@ class TacticNode:
 
         ordered_ = order_techniques(self.techniques)
 
-        return self.name, ordered_
+        return ordered_
 
     def __str__(self):
         return self.name
@@ -451,10 +460,9 @@ class TacticNode:
 
 
 class ArtifactNode:
-    tactics: List[TacticNode] = []  # tactics the artifact has access to.
-
     def __init__(self, name):
         self.name = name
+        self.tactics: List[TacticNode] = []  # tactics the artifact has access to.
 
     def add_tactic(self, tactic: TacticNode):
         self.tactics.append(tactic)
@@ -468,7 +476,7 @@ class ArtifactNode:
                     return technique
 
     def get_all_techniques(self):
-        techniques = [technique for tactic in self.tactics for technique in tactic.techniques]
+        techniques = [technique for tactic in self.tactics for technique in tactic.get_techniques()]
         return techniques
 
     def __hash__(self):
@@ -847,6 +855,7 @@ class AdversaryTree:
         a_abilities = dict(a_abilities)
 
         for c_category, c_category_abilities in c_abilities.items():
+            # TODO there is a bug in the tree which makes the nodes duplicate
 
             if c_category in a_abilities.keys():
                 intersection = [x for x in a_abilities[c_category] if x in c_category_abilities]
@@ -865,7 +874,6 @@ class AdversaryTree:
                     tac_[cur_tac].append(ab)
                 else:
                     tac_[cur_tac] = [ab]
-
             return tac_
 
         nodes = []
@@ -887,6 +895,7 @@ class AdversaryTree:
                     tactic.add_technique(t_)
 
                 category.add_tactic(tactic)
+
             nodes.append(category)
 
         self._nodes = nodes
@@ -919,7 +928,7 @@ class Logic:
         return treasure
 
     @staticmethod
-    def treasure_hunter(tree, flags, preconditions: dict = None, iterations: int = 1):
+    def treasure_hunter(tree, flags, preconditions: dict = None, iterations_allowed: int = 1):
 
         # build the treasure
         treasure = Logic.build_preconditions_treasure(preconditions)
@@ -933,6 +942,9 @@ class Logic:
 
             # collect all the techniques available in one simple array
             techniques = node.get_all_techniques()
+            iterations = iterations_allowed
+
+            print(f"{TerminalColors.OK}Stage: {node.name} {TerminalColors.END}")
 
             while iterations > 0 and not success:
                 # reduce the number of iterations left
@@ -974,7 +986,5 @@ class Logic:
                                       )
 
                                 break
-                        if success:
-                            break
 
         print("Game Done")
