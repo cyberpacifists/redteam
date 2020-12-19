@@ -19,10 +19,10 @@ DEFAULT_SEPARATOR = '|'
 
 DATABASES = {
     'default': {
-        'database': os.environ.get('DATABASE_NAME', 'db'),
-        'host': os.environ.get('DATABASE_HOST', 'localhost'),
-        'user': os.environ.get('DATABASE_USER', 'username'),
-        'password': os.environ.get('DATABASE_PSW', 'password'),
+        'database': os.environ['DATABASE_NAME'],
+        'host': os.environ['DATABASE_HOST'],
+        'user': os.environ['DATABASE_USER'],
+        'password': os.environ['DATABASE_PSW'],
         'adapter': os.environ.get('DATABASE_ENGINE', 'postgresql'),
         'port': os.environ.get('DATABASE_PORT', '5432')
     }
@@ -31,6 +31,5 @@ DATABASES = {
 ADVERSARY = os.environ.get('ADVERSARY', 'hacker')
 CAMPAIGN = os.environ.get('CAMPAIGN', 'default')
 
-DEFENDERS_NETWORK = os.environ.get('DEFENDERS_NETWORK', '192.168.0.0/24')
-
 EVENT_DISPATCHER = dispatcher
+DEFENDERS_NETWORK = os.environ['DEFENDERS_NETWORK']
