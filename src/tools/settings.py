@@ -1,5 +1,7 @@
 import os
 
+from .eventbus import dispatcher
+
 # base directory. Use this path to generate application paths.
 # this referenced directory points to the upper folder from this file i.e. the app folder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,3 +32,5 @@ ADVERSARY = os.environ.get('ADVERSARY', 'hacker')
 CAMPAIGN = os.environ.get('CAMPAIGN', 'default')
 
 DEFENDERS_NETWORK = os.environ.get('DEFENDERS_NETWORK', '192.168.0.0/24')
+
+EVENT_DISPATCHER = dispatcher
