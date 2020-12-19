@@ -984,6 +984,16 @@ class Logic:
                                       f"> technique: {technique.name} "
                                       f"> target: {loot.target}"
                                       )
+                                EVENT_DISPATCHER.send(
+                                    signal='redteam-flags',
+                                    sender=__name__,
+                                    event={
+                                        'category': node.name,
+                                        'technique': technique.name,
+                                        'target': loot.target,
+                                        'flag_status': 'captured',
+                                    }
+                                )
 
                                 break
 

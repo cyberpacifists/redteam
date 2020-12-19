@@ -1,5 +1,7 @@
 import os
 
+from .eventbus import dispatcher
+
 # base directory. Use this path to generate application paths.
 # this referenced directory points to the upper folder from this file i.e. the app folder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,10 +19,10 @@ DEFAULT_SEPARATOR = '|'
 
 DATABASES = {
     'default': {
-        'database': os.environ.get('DATABASE_NAME', 'db'),
-        'host': os.environ.get('DATABASE_HOST', 'localhost'),
-        'user': os.environ.get('DATABASE_USER', 'username'),
-        'password': os.environ.get('DATABASE_PSW', 'password'),
+        'database': os.environ['DATABASE_NAME'],
+        'host': os.environ['DATABASE_HOST'],
+        'user': os.environ['DATABASE_USER'],
+        'password': os.environ['DATABASE_PSW'],
         'adapter': os.environ.get('DATABASE_ENGINE', 'postgresql'),
         'port': os.environ.get('DATABASE_PORT', '5432')
     }
@@ -29,4 +31,5 @@ DATABASES = {
 ADVERSARY = os.environ.get('ADVERSARY', 'hacker')
 CAMPAIGN = os.environ.get('CAMPAIGN', 'default')
 
-DEFENDERS_NETWORK = os.environ.get('DEFENDERS_NETWORK', '192.168.0.0/24')
+EVENT_DISPATCHER = dispatcher
+DEFENDERS_NETWORK = os.environ['DEFENDERS_NETWORK']

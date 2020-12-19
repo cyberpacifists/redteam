@@ -69,7 +69,7 @@ networks:
     ipam:
       config:
         - subnet: 10.5.0.0/16
-          gateway: 10.5.0.1
+          # gateway: 10.5.0.1
 
   master:
     name: master
@@ -77,4 +77,4 @@ networks:
     ipam:
       config:
         - subnet: 10.6.0.0/16
-          gateway: 10.6.0.1
+          # gateway: 10.6.0.1

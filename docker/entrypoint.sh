@@ -3,6 +3,8 @@
 # Check if the database is postgresql, and if so, wait for it to be ready
 if [ "$CHECK_DB" = "1" ]
 then
+  [ -n "$DATABASE_HOST" ] || { echo "Error: DATABASE_HOST not defined in environment"; exit 1; }
+  [ -n "$DATABASE_PORT" ] || { echo "Error: DATABASE_PORT not defined in environment"; exit 1; }
   echo "Waiting for postgres..."
   while ! nc -z "$DATABASE_HOST" "$DATABASE_PORT"; do
     sleep 0.1
