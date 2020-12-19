@@ -49,12 +49,14 @@ services:
      - "8080:80"
 
     networks:
-      - defenders
+      defenders:
+        ipv4_address: 10.5.0.6
 
   wordpress-mysql:
     image: mysql:5
     environment: 
      - MYSQL_ROOT_PASSWORD=root
+     - MYSQL_DATABASE=wordpress
     networks:
       - defenders
 

@@ -1,8 +1,6 @@
 import yaml
 import os
 
-from typing import List
-
 # the package manager from python is retarded. This packages exist, are local, no worries about the retarded errors
 from tools.models import AdversaryTree, ArtifactNode, Schema, Logic
 from tools.settings import ADVERSARY, CAMPAIGN, BASE_DIR
@@ -65,8 +63,6 @@ class Campaign:
     specific scenario.
     That is, a campaign is meant to set up the scenario and the limitations.
     """
-    __nodes: List[ArtifactNode] = []
-    __built: bool = False
 
     def __init__(self, plan):
         self.plan_ = plan
@@ -87,7 +83,6 @@ class Adversary:
     """
     This class is the top level adversary, the decisions maker, the way the app behaves
     """
-    __campaign: Campaign = None
 
     def __init__(self, profile):
         self.profile = profile
