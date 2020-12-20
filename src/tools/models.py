@@ -18,6 +18,7 @@ import subprocess
 import yaml
 import random
 import json
+import time
 
 from .settings import *
 from typing import List
@@ -996,5 +997,6 @@ class Logic:
                                 )
 
                                 break
-
+            print(f"Waiting {TURN_SLEEP} seconds until next action...")
+            time.sleep(TURN_SLEEP)
         print("Game Done")
