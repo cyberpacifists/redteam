@@ -30,6 +30,15 @@ class TerminalColors:
     WARNING = '\033[93m'
     END = '\033[0m'
 
+    @staticmethod
+    def block(string):
+        print(f"\u001b[48;1;41m{string}{TerminalColors.END}")
+
+    @staticmethod
+    def rainbow(string):
+        t = ''.join([f'\u001b[3{i}m{s}{TerminalColors.END}' for i, s in enumerate(string)])
+        print(t)
+
 
 class PermissionsLevel:
     NOOB = 1, 'n00b'
@@ -945,7 +954,7 @@ class Logic:
             techniques = node.get_all_techniques()
             iterations = iterations_allowed
 
-            print(f"{TerminalColors.OK}Stage: {node.name} {TerminalColors.END}")
+            print(f"{TerminalColors.OK}Category: {node.name} {TerminalColors.END}")
 
             while iterations > 0 and not success:
                 # reduce the number of iterations left
@@ -979,12 +988,14 @@ class Logic:
                         # once the worker is done, check the flags gathered in the loot,
                         # play them against the current flag, and mark the loot box as a good one.
                         for loot_flag in loot.collect("flags"):
+
                             if flag == loot_flag:
                                 success = True
-                                print(f"[SUCCESS] category: {node.name} "
-                                      f"> technique: {technique.name} "
-                                      f"> target: {loot.target}"
-                                      )
+                                TerminalColors.block(f"[SUCCESS] category: {node.name} "
+                                                     f"> technique: {technique.name} "
+                                                     f"> target: {loot.target}"
+                                                     )
+
                                 EVENT_DISPATCHER.send(
                                     signal='redteam-flags',
                                     sender=__name__,
@@ -999,4 +1010,4 @@ class Logic:
                                 break
             print(f"Waiting {TURN_SLEEP} seconds until next action...")
             time.sleep(TURN_SLEEP)
-        print("Game Done")
+        TerminalColors.rainbow("Game Done")
