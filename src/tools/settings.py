@@ -36,5 +36,5 @@ DEFENDERS_NETWORK = os.environ['DEFENDERS_NETWORK']
 
 # Speed of the attacker (min=1, max=100)
 SPEED = max(1, min(100, int(os.environ.get('SPEED', '90'))))
-# We derive the time between attacker actions from the SPEED parameter (min=1, max=100)
+# We derive the time between attacker actions from the SPEED parameter
 TURN_SLEEP = min(100, max(1, 100 - SPEED))
